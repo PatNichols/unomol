@@ -1,0 +1,96 @@
+cp patin.dat.3g.h2 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.3g.h2
+mv short.gs.dat short.dat.3g.h2
+cp patin.dat.431.h2 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.431.h2
+mv short.gs.dat short.dat.431.h2
+cp patin.dat.631.h2 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.631.h2
+mv short.gs.dat short.dat.631.h2
+cp patin.dat.3g.n2 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.3g.n2
+mv short.gs.dat short.dat.3g.n2
+cp patin.dat.431.n2 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.431.n2
+mv short.gs.dat short.dat.431.n2
+cp patin.dat.631.n2 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.631.n2
+mv short.gs.dat short.dat.631.n2
+cp patin.dat.3g.co patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.3g.co
+mv short.gs.dat short.dat.3g.co
+mv moments.dat moments.dat.3g.co
+cp patin.dat.431.co patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.431.co
+mv short.gs.dat short.dat.431.co
+mv moments.dat moments.dat.431.co
+cp patin.dat.631.co patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.631.co
+mv short.gs.dat short.dat.631.co
+mv moments.dat moments.dat.631.co
+cp patin.dat.3g.hf patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.3g.hf
+mv short.gs.dat short.dat.3g.hf
+mv moments.dat moments.dat.3g.hf
+cp patin.dat.431.hf patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.431.hf
+mv short.gs.dat short.dat.431.hf
+mv moments.dat moments.dat.431.hf
+cp patin.dat.631.hf patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.631.hf
+mv short.gs.dat short.dat.631.hf
+mv moments.dat moments.dat.631.hf
+cp patin.dat.3g.h2o patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.3g.h2o
+mv short.gs.dat short.dat.3g.h2o
+mv moments.dat moments.dat.3g.h2o
+cp patin.dat.431.h2o patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.431.h2o
+mv short.gs.dat short.dat.431.h2o
+mv moments.dat moments.dat.431.h2o
+cp patin.dat.631.h2o patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.631.h2o
+mv short.gs.dat short.dat.631.h2o
+mv moments.dat moments.dat.631.h2o
+cp patin.dat.3g.nh3 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.3g.nh3
+mv short.gs.dat short.dat.3g.nh3
+mv moments.dat moments.dat.3g.nh3
+cp patin.dat.431.nh3 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.431.nh3
+mv short.gs.dat short.dat.431.nh3
+mv moments.dat moments.dat.431.nh3
+cp patin.dat.631.nh3 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.631.nh3
+mv short.gs.dat short.dat.631.nh3
+mv moments.dat moments.dat.631.nh3
+cp patin.dat.3g.ch4 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.3g.ch4
+mv short.gs.dat short.dat.3g.ch4
+cp patin.dat.431.ch4 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.431.ch4
+mv short.gs.dat short.dat.431.ch4
+cp patin.dat.631.ch4 patin.dat
+mpirun -n 4 ./UnomolMPI
+mv scfout.gs.dat scfout.dat.631.ch4
+mv short.gs.dat short.dat.631.ch4
