@@ -1,0 +1,22 @@
+ MULTIPOLE MOMENT ANALYSIS 
+ units in bohr - hartree atomic units 
+
+ DIPOLE MOMENTS 
+
+          Total         Electronic        Nuclear 
+ x    8.5943765e-01    1.3550651e+00    2.2145028e+00 
+ y   -1.3759061e-14    1.3759061e-14    0.0000000e+00 
+ z    1.4222100e-15   -1.4222100e-15    0.0000000e+00 
+
+ QUADRUPOLE MOMENTS 
+
+          Total         Electronic        Nuclear 
+ xx   -4.0425344e+00    6.4945457e+00    2.4520113e+00 
+ xy   -1.4410872e-14    1.4434098e-14    2.3225827e-17 
+ xz    1.6839032e-15   -1.6839032e-15    0.0000000e+00 
+ yy   -2.5770809e+00    6.6700316e+00    4.0929507e+00 
+ yz   -9.6885833e-16    9.6885833e-16    0.0000000e+00 
+ zz   -5.3277868e+00    5.3277868e+00    0.0000000e+00 
+
+ Dipole moment     =     1.422209955941782e-15 
+ Quadrupole moment =    -2.017979122746507e+00 

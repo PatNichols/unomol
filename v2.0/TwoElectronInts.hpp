@@ -4,9 +4,9 @@
 #include <cstdlib>
 #include <cmath>
 #include "pconfig.h"
-#include "Util.cc"
-#include "Basis.cc"
-#include "Rys.cc"
+#include "Util.hpp"
+#include "Basis.hpp"
+#include "Rys.hpp"
 #ifdef _MPI_API_
 #include <mpi.h>
 #endif
@@ -224,7 +224,7 @@ inline void TwoElectronInts::calc_two_electron_ints(const ShellQuartet& sq,
     }
 }
 
-TwoElectronInts::TwoElectronInts(const Basis& basis,
+inline TwoElectronInts::TwoElectronInts(const Basis& basis,
                                  int start_shell,const string& base_str)
 {
     const double threshold=1.e-14;

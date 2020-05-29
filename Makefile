@@ -1,7 +1,7 @@
 CXX = g++
-CFLAGS = -O3 -funroll-loops -ffast-math -march=native -mavx2 -fno-exceptions 
-
-FILES =	AuxFunctions.cc \
+CFLAGS= -g -O3 -fPIC -ffast-math -march=native
+CXXFLAGS= -g -O3 -fPIC -ffast-math -march=native
+SER_FILES = AuxFunctions.cc \
 	Basis.cc \
 	Center.cc \
 	FField.cc \
@@ -43,9 +43,9 @@ MPI_FILES= AuxFunctions.cc \
 
 
 mpif:	$(MPI_FILES)
-	$(MPI_CXX) $(CFLAGS) -o UnomolMPI UnomolMPI.cc
+	$(MPICXX) $(CFLAGS) -o UnomolMPI UnomolMPI.cc
 
-all: $(FILES)
+all: 	$(SER_FILES)
 	$(CXX) $(CFLAGS) -o Unomol Unomol.cc
 	g++ -o input input.cc
 	g++ -o test/srder test/srder.cc

@@ -1,0 +1,47 @@
+Final Iteration              =           69
+Hartree Fock Energy          =    -7.590739050739555e+01 Hartree
+Electronic Energy            =    -8.510157181505187e+01 Hartree
+Nuclear Rep. Energy          =     9.194181307656322e+00 Hartree
+Kinetic Energy               =     7.593210706192005e+01 Hartree
+Difference in Final Energies =   -5.6843418860808015e-14 Hartree
+Pmatrix diff norm            =    1.7937764191530246e-14
+virial                       =    9.9983724569565580e-01
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+               Orbital Energies
+Orbital Energy          Occupancy
+      1   -2.0519112434263331e+01            2
+      2   -1.3523278649466832e+00            2
+      3   -7.0750939235700372e-01            2
+      4   -5.5837298538543234e-01            2
+      5   -4.9956656716173664e-01            2
+      6    2.0851662524272435e-01            0
+      7    3.0424212259960803e-01            0
+      8    1.0682580552298646e+00            0
+      9    1.1957016106203269e+00            0
+     10    1.2405045673702950e+00            0
+     11    1.2933956510967362e+00            0
+     12    1.4541033392041953e+00            0
+     13    1.8230673263498425e+00            0
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+           Mulliken Populations 
+Orbital  Net Population
+      1    5.0722205371081008e-01
+      2    1.0029385813725854e-01
+      3    1.9950607531079074e+00
+      4    8.3365354812854875e-01
+      5    1.0628569475311660e+00
+      6    9.0595119716242878e-01
+      7    7.6344528473404172e-01
+      8    1.1118315899188285e+00
+      9    7.2904147796847385e-01
+     10    4.9495896767131531e-01
+     11    8.8816841008117087e-01
+     12    5.0722205371081364e-01
+     13    1.0029385813724985e-01
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Mulliken Atomic Charges 
+Orbital   Nuclear Charge   Net Charge 
+      1    1.0000000000    0.3924840882 
+      2    8.0000000000   -0.7849681763 
+      3    1.0000000000    0.3924840882 
