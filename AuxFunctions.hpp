@@ -4,10 +4,8 @@
 #include <cmath>
 #include <cstring>
 
-
 using namespace std;
 
-namespace unomol {
 /////////////////////////////////////////////////////
 // Auxillary Functions used for doing calculations //
 //  most of these derive from the need to use      //
@@ -21,7 +19,9 @@ private:
     double **nfact;
     double *dfact;
 public:
-    AuxFunctions(int maxl)
+    AuxFunctions()=delete;
+    
+    explicit AuxFunctions(int maxl)
     {
         int mlp1=maxl+1;
         nlst=new int[mlp1];
@@ -82,5 +82,5 @@ public:
     };
     double angfactor(int lx) const { return dfact[lx];};
 };
-}
+
 #endif

@@ -2,10 +2,10 @@
 #include <string>
 #define _MPI_API_
 #include <mpi.h>
-#include "Basis.cc"
-#include "TwoElectronInts.cc"
-#include "RHF_MPI.cc"
-#include "UHF_MPI.cc"
+#include "Basis.hpp"
+#include "TwoElectronInts.hpp"
+#include "RHF_MPI.hpp"
+#include "UHF_MPI.hpp"
 
 int main(int argc,char **argv)
 {

@@ -1,9 +1,9 @@
 #include <cstdlib>
 #include <string>
-#include "Basis.cc"
-#include "TwoElectronInts.cc"
-#include "RHF.cc"
-#include "UHF.cc"
+#include "Basis.hpp"
+#include "TwoElectronInts.hpp"
+#include "RHF.hpp"
+#include "UHF.hpp"
 
 int main(int argc,char **argv)
 {
