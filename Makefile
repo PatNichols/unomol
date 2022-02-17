@@ -1,15 +1,13 @@
-CFLAGS=-g -O3 -fPIC -ffast-math -march=native
-CXXFLAGS=-g -O3 -fPIC -ffast-math -march=native
-SER_FILES = Unomol.cc 
+CFLAGS=-g -O3 -fPIC -ffast-math -mtune=native -Wno-unused-result
+CXXFLAGS=-g -O3 -fPIC -ffast-math -mtune=native -Wno-unused-result
 
-MPI_FILES= UnomolMPI.cc 
+SER_FILES= Util.o SymmPack.o Rys.o Moments.o OneElectronInts.o FField.o TwoElectronInts.o GDPMInts.o Unomol.o
 
-all: 	
-	$(MPICXX) $(CFLAGS) -o UnomolMPI UnomolMPI.cc
-	$(CXX) $(CFLAGS) -o Unomol Unomol.cc
+all: 	$(SER_FILES)
+	$(CXX) $(CXXFLAGS) -o Unomol $(SER_FILES)
 	$(CXX) -o input input.cc
 	$(CXX) -o test/srder test/srder.cc
 	
 clean:
-	rm -fr Unomol UnomolMPI input test/srder
+	rm -fr *.o Unomol UnomolMPI input test/srder
 	

@@ -2,12 +2,10 @@
 
 #define MAXROOTSSQR 81
 #define THRESHOLD 1.e-14
-namespace unomol
-{
+namespace unomol {
 
 void
-ffunction (int n, double *ff, double *term, const double& x) noexcept
-    {
+ffunction (int n, double *ff, double *term, const double& x) noexcept {
     int i, k, ku;
     int use_power_series;
     double suma, term0, e;
@@ -18,51 +16,42 @@ ffunction (int n, double *ff, double *term, const double& x) noexcept
     e = exp (-x) * .5;
     fac0 = (double) n;
     fac0 += .5;
-    if (x > xsw)
-        {
+    if (x > xsw) {
         /////////////////////////////////////////
         //  use asymptotic series
         /////////////////////////////////////////
         sum = sqrt (pie4 / x);
-        if (n)
-            {
+        if (n) {
             fac = -.5;
-            for (k = 1; k <= n; ++k)
-                {
+            for (k = 1; k <= n; ++k) {
                 fac += 1.;
                 sum = sum * fac / x;
-                }
             }
+        }
         i = 1;
         term[0] = -e / x;
         suma = sum + term[0];
-        if (suma != sum)
-            {
+        if (suma != sum) {
             fac = fac0;
             ku = (int) (x + fac0 - 1.);
-            for (i = 2; i <= ku; ++i)
-                {
+            for (i = 2; i <= ku; ++i) {
                 fac += -1.;
                 term[i - 1] = term[i - 2] * fac / x;
                 sum1 = suma;
                 suma += term[i - 1];
-                if (suma == sum1)
-                    {
+                if (suma == sum1) {
                     use_power_series = 0;
                     break;
-                    }
                 }
             }
-        else
-            {
+        } else {
             use_power_series = 0;
-            }
         }
+    }
     ////////////////////////////////////////
     // if xsw set too low, or x < xsw  use power series.
     ////////////////////////////////////////
-    if (use_power_series)
-        {
+    if (use_power_series) {
         fac = fac0;
         term0 = e / fac;
         sum = term0;
@@ -70,49 +59,43 @@ ffunction (int n, double *ff, double *term, const double& x) noexcept
         /////////////////////////////////////
         //  sum increasing terms forwards
         /////////////////////////////////////
-        for (k = 1; k <= ku; ++k)
-            {
+        for (k = 1; k <= ku; ++k) {
             fac += 1.;
             term0 = term0 * x / fac;
             sum += term0;
-            }
+        }
         i = 1;
         fac += 1.;
         term[0] = term0 * x / fac;
         suma = sum + term[0];
-        if (sum != suma)
-            {
-            do
-                {
+        if (sum != suma) {
+            do {
                 ++i;
                 fac += 1.;
                 term[i - 1] = term[i - 2] * x / fac;
                 sum1 = suma;
                 suma += term[i - 1];
-                }
-            while ((sum1 - suma) != 0.0);
-            }
+            } while ((sum1 - suma) != 0.0);
         }
+    }
     ////////////////////////////////////////
     // sum decreasing terms backwards
     ////////////////////////////////////////
     sum1 = 0.;
-    for (k = 1; k <= i; ++k)
-        {
+    for (k = 1; k <= i; ++k) {
         sum1 += term[i - k];
-        }
+    }
     ff[n] = sum + sum1;
     ////////////////////////////////////////
     //  use recurrence relation
     ////////////////////////////////////////
     if (!n)
         return;
-    for (k = 1; k <= n; ++k)
-        {
+    for (k = 1; k <= n; ++k) {
         fac0 += -1.;
         ff[n - k] = (e + x * ff[n + 1 - k]) / fac0;
-        }
     }
+}
 
 
 //////////////////////////////////////////////////////////
@@ -120,49 +103,40 @@ ffunction (int n, double *ff, double *term, const double& x) noexcept
 //  c(t)sc=i, where i is an n by n identity matrix.
 //////////////////////////////////////////////////////////
 void smit (int n,
-           double *c, double *s, double *v, double *y) noexcept
-    {
+           double *c, double *s, double *v, double *y) noexcept {
     int i, j, k;
     int kmax;
     double fac, dot;
 
-    for (i = 1; i <= n; ++i)
-        {
-        for (j = 1; j <= i; ++j)
-            {
+    for (i = 1; i <= n; ++i) {
+        for (j = 1; j <= i; ++j) {
             c[i + j * 10 - 11] = 0.;
-            }
-        }
-    for (j = 1; j <= n; ++j)
-        {
-        kmax = j - 1;
-        fac = s[j + j * 10 - 11];
-        for (k = 1; k <= kmax; ++k)
-            {
-            v[k - 1] = 0.;
-            y[k - 1] = s[k + j * 10 - 11];
-            }
-        for (k = 1; k <= kmax; ++k)
-            {
-            dot = 0.;
-            for (i = 1; i <= k; ++i)
-                {
-                dot = c[i + k * 10 - 11] * y[i - 1] + dot;
-                }
-            for (i = 1; i <= k; ++i)
-                {
-                v[i - 1] -= dot * c[i + k * 10 - 11];
-                }
-            fac -= dot * dot;
-            }
-        fac = 1.0 / sqrt (fac);
-        c[j + j * 10 - 11] = fac;
-        for (k = 1; k <= kmax; ++k)
-            {
-            c[k + j * 10 - 11] = fac * v[k - 1];
-            }
         }
     }
+    for (j = 1; j <= n; ++j) {
+        kmax = j - 1;
+        fac = s[j + j * 10 - 11];
+        for (k = 1; k <= kmax; ++k) {
+            v[k - 1] = 0.;
+            y[k - 1] = s[k + j * 10 - 11];
+        }
+        for (k = 1; k <= kmax; ++k) {
+            dot = 0.;
+            for (i = 1; i <= k; ++i) {
+                dot = c[i + k * 10 - 11] * y[i - 1] + dot;
+            }
+            for (i = 1; i <= k; ++i) {
+                v[i - 1] -= dot * c[i + k * 10 - 11];
+            }
+            fac -= dot * dot;
+        }
+        fac = 1.0 / sqrt (fac);
+        c[j + j * 10 - 11] = fac;
+        for (k = 1; k <= kmax; ++k) {
+            c[k + j * 10 - 11] = fac * v[k - 1];
+        }
+    }
+}
 
 /////////////////////////////////////////////////////////////////
 //  return in rt(i) the ith root of a polynomial
@@ -170,8 +144,7 @@ void smit (int n,
 //  the initial values in rt must bracket the final values.
 /////////////////////////////////////////////////////////////////
 void
-node (int k, const double *a, double *rt) noexcept
-    {
+node (int k, const double *a, double *rt) noexcept {
     int i, m;
     double prod;
     double r, delta;
@@ -180,29 +153,25 @@ node (int k, const double *a, double *rt) noexcept
 
     r2 = 0.0;
     p2 = a[0];
-    for (m = 1; m <= k; ++m)
-        {
+    for (m = 1; m <= k; ++m) {
         r1 = r2;
         p1 = p2;
         r2 = rt[m - 1];
         p2 = a[k];
-        for (i = 1; i <= k; ++i)
-            {
+        for (i = 1; i <= k; ++i) {
             p2 = p2 * r2 + a[k - i];
-            }
+        }
         prod = p1 * p2;
-        if (prod >= 0.)
-            {
+        if (prod >= 0.) {
             fprintf (stderr, " node: root number %d of polynomial of\n", m);
             fprintf (stderr, "   order= %d not found\n", k);
             exit (EXIT_FAILURE);
-            }
+        }
         r5 = r1;
         p5 = p1;
         r6 = r2;
         p6 = p2;
-        for (;;)
-            {
+        for (;;) {
             r3 = r5;
             p3 = p5;
             r4 = r6;
@@ -213,56 +182,45 @@ node (int k, const double *a, double *rt) noexcept
             dr *= .0625;
             r5 = r - dr;
             r6 = r + dr;
-            if (fabs (delta) < accry || r5 == r || r6 == r)
-                {
+            if (fabs (delta) < accry || r5 == r || r6 == r) {
                 break;
-                }
-            if (r5 < r3)
-                {
+            }
+            if (r5 < r3) {
                 r5 = r3;
-                }
-            if (r6 > r4)
-                {
+            }
+            if (r6 > r4) {
                 r6 = r4;
-                }
+            }
             p5 = a[k];
             p6 = p5;
-            for (i = 1; i <= k; ++i)
-                {
+            for (i = 1; i <= k; ++i) {
                 p5 = p5 * r5 + a[k - i];
                 p6 = p6 * r6 + a[k - i];
-                }
-            for (;;)
-                {
+            }
+            for (;;) {
                 prod = p5 * p6;
-                if (prod < 0.)
-                    {
+                if (prod < 0.) {
                     break;
-                    }
+                }
                 prod = p3 * p5;
-                if (prod > 0.)
-                    {
+                if (prod > 0.) {
                     r6 = r4 * .25 + r6 * .75;
                     p6 = a[k];
-                    for (i = 1; i <= k; ++i)
-                        {
+                    for (i = 1; i <= k; ++i) {
                         p6 = p6 * r6 + a[k - i];
-                        }
                     }
-                else
-                    {
+                } else {
                     r5 = r3 * .25 + r5 * .75;
                     p5 = a[k];
-                    for (i = 1; i <= k; ++i)
-                        {
+                    for (i = 1; i <= k; ++i) {
                         p5 = p5 * r5 + a[k - i];
-                        }
                     }
                 }
             }
-        rt[m - 1] = r;
         }
+        rt[m - 1] = r;
     }
+}
 
 ///////////////////////////////////////////////////////////////////
 //  ith root of the jth rys polynomial is returned in r(i,j)
@@ -271,8 +229,7 @@ node (int k, const double *a, double *rt) noexcept
 //  this version uses christoffel formula for weights.
 ///////////////////////////////////////////////////////////////
 void
-Rys::rootN (int nr, double X) noexcept
-    {
+Rys::rootN (int nr, double X) noexcept {
     int i, j, k, m, n;
     int j1, k1, nn, n1;
     double d1;
@@ -282,11 +239,10 @@ Rys::rootN (int nr, double X) noexcept
     double ff[19], term[200], a[10], rt[10], x;
     double *c, *s;
 
-    if (nr > 9)
-        {
+    if (nr > 9) {
         std::cerr << "Rys::rootN not implemented for # of roots > 9\n";
         exit(-1);
-        }
+    }
 
     n = nr;
     if (n < 2)
@@ -297,22 +253,18 @@ Rys::rootN (int nr, double X) noexcept
     ffunction (nn, ff, term, x);
     c = &term[0];
     s = &term[100];
-    for (i = 1; i <= n1; ++i)
-        {
-        for (j = 1; j <= n1; ++j)
-            {
+    for (i = 1; i <= n1; ++i) {
+        for (j = 1; j <= n1; ++j) {
             s[i + j * 10 - 11] = ff[i + j - 2];
-            }
         }
+    }
     smit (n1, c, s, a, rt);
-    for (i = 1; i <= n; ++i)
-        {
-        for (j = 1; j <= i; ++j)
-            {
+    for (i = 1; i <= n; ++i) {
+        for (j = 1; j <= i; ++j) {
             w[i + j * 9 - 10] = 0.;
             r[i + j * 9 - 10] = 0.;
-            }
         }
+    }
     wsum = ff[0];
     w[0] = wsum;
     r[0] = ff[1] / wsum;
@@ -320,73 +272,57 @@ Rys::rootN (int nr, double X) noexcept
     dum = sqrt (d1 * d1 - c[20] * 4. * c[22]);
     r[9] = (-c[21] - dum) * .5 / c[22];
     r[10] = (-c[21] + dum) * .5 / c[22];
-    if (n > 2)
-        {
-        for (i = 3; i <= n1; ++i)
-            {
+    if (n > 2) {
+        for (i = 3; i <= n1; ++i) {
             rt[i - 1] = 1.;
-            }
+        }
         rt[0] = r[9];
         rt[1] = r[10];
-        for (k = 3; k <= n; ++k)
-            {
+        for (k = 3; k <= n; ++k) {
             k1 = k + 1;
-            for (i = 1; i <= k1; ++i)
-                {
+            for (i = 1; i <= k1; ++i) {
                 a[i - 1] = c[i + k1 * 10 - 11];
-                }
+            }
             node (k, a, rt);
-            for (i = 1; i <= k; ++i)
-                {
+            for (i = 1; i <= k; ++i) {
                 r[i + k * 9 - 10] = rt[i - 1];
-                }
             }
         }
-    for (k = 2; k <= n; ++k)
-        {
-        for (i = 1; i <= k; ++i)
-            {
+    }
+    for (k = 2; k <= n; ++k) {
+        for (i = 1; i <= k; ++i) {
             root = r[i + k * 9 - 10];
             dum = 1. / ff[0];
-            for (j = 1; j < k; ++j)
-                {
+            for (j = 1; j < k; ++j) {
                 j1 = j + 1;
                 poly = c[j1 + j1 * 10 - 11];
-                for (m = 1; m <= j; ++m)
-                    {
+                for (m = 1; m <= j; ++m) {
                     poly = poly * root + c[j1 - m + j1 * 10 - 11];
-                    }
-                dum += poly * poly;
                 }
-            w[i + k * 9 - 10] = 1. / dum;
+                dum += poly * poly;
             }
+            w[i + k * 9 - 10] = 1. / dum;
         }
-    for (k = 1; k <= nr; ++k)
-        {
+    }
+    for (k = 1; k <= nr; ++k) {
         dum = r[k + nr * 9 - 10];
         roots[k - 1] = dum / (1. - dum);
         weights[k - 1] = w[k + nr * 9 - 10];
-        }
     }
+}
 
 void
-Rys::root1 (double x) noexcept
-    {
+Rys::root1 (double x) noexcept {
     double f1, y, xinv, g;
     const double pie4 = .785398163397448;
 
-    if (x <= 5.0)
-        {
-        if (x <= 1.0)
-            {
-            if (x <= 3.e-7)
-                {
+    if (x <= 5.0) {
+        if (x <= 1.0) {
+            if (x <= 3.e-7) {
                 roots[0] = .5 - x / 5.;
                 weights[0] = 1. - x / 3.;
                 return;
-                }
-            else
-                {
+            } else {
                 f1 = ((((((((-8.36313918003957e-8 * x +
                              1.21222603512827e-6) * x -
                             1.15662609053481e-5) * x +
@@ -399,12 +335,9 @@ Rys::root1 (double x) noexcept
                 weights[0] = (x + x) * f1 + exp (-x);
                 roots[0] = f1 / (weights[0] - f1);
                 return;
-                }
             }
-        else
-            {
-            if (x <= 3.0)
-                {
+        } else {
+            if (x <= 3.0) {
                 y = x - 2.;
                 f1 = ((((((((((y * -1.61702782425558e-10 +
                                1.96215250865776e-9) * y -
@@ -420,9 +353,7 @@ Rys::root1 (double x) noexcept
                 weights[0] = (x + x) * f1 + exp (-x);
                 roots[0] = f1 / (weights[0] - f1);
                 return;
-                }
-            else
-                {
+            } else {
                 y = x - 4.;
                 f1 = ((((((((((y * -2.62453564772299e-11 +
                                3.24031041623823e-10) * y -
@@ -438,15 +369,13 @@ Rys::root1 (double x) noexcept
                 weights[0] = (x + x) * f1 + exp (-x);
                 roots[0] = f1 / (weights[0] - f1);
                 return;
-                }
             }
         }
+    }
     xinv = 1.0 / x;
-    if (x <= 15.0)
-        {
+    if (x <= 15.0) {
         g = exp (-x);
-        if (x <= 10.0)
-            {
+        if (x <= 10.0) {
             weights[0] = ((((((.46897511375022 * xinv -
                                .69955602298985) * xinv +
                               .53689283271887) * xinv -
@@ -457,9 +386,7 @@ Rys::root1 (double x) noexcept
             f1 = (weights[0] - g) / (x + x);
             roots[0] = f1 / (weights[0] - f1);
             return;
-            }
-        else
-            {
+        } else {
             weights[0] = (((-.18784686463512 * xinv +
                             .22991849164985) * xinv -
                            .49893752514047) * xinv -
@@ -467,10 +394,9 @@ Rys::root1 (double x) noexcept
             f1 = (weights[0] - g) * 0.5 * xinv;
             roots[0] = f1 / (weights[0] - f1);
             return;
-            }
         }
-    if (x <= 33.0)
-        {
+    }
+    if (x <= 33.0) {
         g = exp (-x);
         weights[0] = ((.1962326414943 * xinv -
                        .4969524146449) * xinv -
@@ -478,16 +404,15 @@ Rys::root1 (double x) noexcept
         f1 = (weights[0] - g) * 0.5 * xinv;
         roots[0] = f1 / (weights[0] - f1);
         return;
-        }
+    }
     weights[0] = sqrt (pie4 * xinv);
     roots[0] = .5 / (x - .5);
     return;
-    }
+}
 
 
 void
-Rys::root2 (double x) noexcept
-    {
+Rys::root2 (double x) noexcept {
     double f1, y, xinv, g;
     const double pie4 = .785398163397448;
     const double r12 = .275255128608411;
@@ -495,20 +420,15 @@ Rys::root2 (double x) noexcept
     const double w22 = .0917517095361369;
 
 
-    if (x <= 5.0)
-        {
-        if (x <= 1.0)
-            {
-            if (x <= 3.e-7)
-                {
+    if (x <= 5.0) {
+        if (x <= 1.0) {
+            if (x <= 3.e-7) {
                 roots[0] = .130693606237085 - x * .0290430236082028;
                 roots[1] = 2.86930639376291 - x * .637623643058102;
                 weights[0] = .652145154862545 - x * .122713621927067;
                 weights[1] = .347854845137453 - x * .210619711404725;
                 return;
-                }
-            else
-                {
+            } else {
                 f1 = ((((((((x * -8.36313918003957e-8 +
                              1.21222603512827e-6) * x -
                             1.15662609053481e-5) * x +
@@ -539,12 +459,9 @@ Rys::root2 (double x) noexcept
                              (roots[1] + 1.) / (roots[1] - roots[0]);
                 weights[0] -= weights[1];
                 return;
-                }
             }
-        else
-            {
-            if (x <= 3.0)
-                {
+        } else {
+            if (x <= 3.0) {
                 y = x - 2.;
                 f1 = ((((((((((y * -1.61702782425558e-10 +
                                1.96215250865776e-9) * y -
@@ -582,9 +499,7 @@ Rys::root2 (double x) noexcept
                              (roots[1] + 1.) / (roots[1] - roots[0]);
                 weights[0] -= weights[1];
                 return;
-                }
-            else
-                {
+            } else {
                 y = x - 4.;
                 f1 = ((((((((((y * -2.62453564772299e-11 +
                                3.24031041623823e-10) * y -
@@ -621,15 +536,13 @@ Rys::root2 (double x) noexcept
                              (roots[1] + 1.) / (roots[1] - roots[0]);
                 weights[0] -= weights[1];
                 return;
-                }
             }
         }
+    }
     xinv = 1.0 / x;
-    if (x <= 15.0)
-        {
+    if (x <= 15.0) {
         g = exp (-x);
-        if (x <= 10.0)
-            {
+        if (x <= 10.0) {
             weights[0] = ((((((.46897511375022 * xinv -
                                .69955602298985) * xinv +
                               .53689283271887) * xinv -
@@ -670,9 +583,7 @@ Rys::root2 (double x) noexcept
                          (roots[1] + 1.) / (roots[1] - roots[0]);
             weights[0] -= weights[1];
             return;
-            }
-        else
-            {
+        } else {
             weights[0] = (((-.18784686463512 * xinv +
                             .22991849164985) * xinv -
                            .49893752514047) * xinv -
@@ -699,11 +610,10 @@ Rys::root2 (double x) noexcept
                          (roots[1] + 1.) / (roots[1] - roots[0]);
             weights[0] -= weights[1];
             return;
-            }
         }
+    }
     weights[0] = sqrt (pie4 * xinv);
-    if (x <= 40.0)
-        {
+    if (x <= 40.0) {
         g = exp (-x);
         roots[0] = (x * -.87894730749888 + 10.9243702330261) * g +
                    r12 / (x - r12);
@@ -713,17 +623,16 @@ Rys::root2 (double x) noexcept
                      w22 * weights[0];
         weights[0] -= weights[1];
         return;
-        }
+    }
     roots[0] = r12 / (x - r12);
     roots[1] = r22 / (x - r22);
     weights[1] = w22 * weights[0];
     weights[0] -= weights[1];
     return;
-    }
+}
 
 void
-Rys::root3 (double x) noexcept
-    {
+Rys::root3 (double x) noexcept {
     double y, xinv, g, a1, a2, f1, f2, t1, t2, t3;
     const double pie4 = .785398163397448;
     const double r13 = .190163509193487;
@@ -732,12 +641,9 @@ Rys::root3 (double x) noexcept
     const double r33 = 5.52534374226326;
     const double w33 = .00511156880411248;
 
-    if (x <= 5.0)
-        {
-        if (x <= 1.0)
-            {
-            if (x <= 3.e-7)
-                {
+    if (x <= 5.0) {
+        if (x <= 1.0) {
+            if (x <= 3.e-7) {
                 roots[0] = .0603769246832797 - x * .00928875764357368;
                 roots[1] = .776823355931043 - x * .119511285527878;
                 roots[2] = 6.66279971938567 - x * 1.02504611068957;
@@ -745,9 +651,7 @@ Rys::root3 (double x) noexcept
                 weights[1] = .360761573048137 - x * .149077186455208;
                 weights[2] = .171324492379169 - x * .127768455150979;
                 return;
-                }
-            else
-                {
+            } else {
                 roots[0] =
                     ((((((x * -5.1018669153887e-10 +
                           2.4013441570345e-8) * x -
@@ -789,10 +693,9 @@ Rys::root3 (double x) noexcept
                 weights[1] = (t3 * a1 - a2) / ((t3 - t2) * (t2 - t1));
                 weights[0] = weights[0] - weights[1] - weights[2];
                 return;
-                }
             }
-        if (x <= 3.0)
-            {
+        }
+        if (x <= 3.0) {
             y = x - 2.0;
             roots[0] =
                 ((((((((y * 1.44687969563318e-12 +
@@ -837,9 +740,7 @@ Rys::root3 (double x) noexcept
             weights[1] = (t3 * a1 - a2) / ((t3 - t2) * (t2 - t1));
             weights[0] = weights[0] - weights[1] - weights[2];
             return;
-            }
-        else
-            {
+        } else {
             y = x - 4.0;
             roots[0] =
                 (((((((y * 1.44265709189601e-11 -
@@ -884,14 +785,12 @@ Rys::root3 (double x) noexcept
             weights[1] = (t3 * a1 - a2) / ((t3 - t2) * (t2 - t1));
             weights[0] = weights[0] - weights[1] - weights[2];
             return;
-            }
         }
+    }
     xinv = 1.0 / x;
-    if (x <= 15.0)
-        {
+    if (x <= 15.0) {
         g = exp (-x);
-        if (x <= 10.0)
-            {
+        if (x <= 10.0) {
             weights[0] =
                 ((((((.46897511375022 * xinv - .69955602298985) * xinv +
                      .53689283271887) * xinv - .32883030418398) * xinv +
@@ -940,9 +839,7 @@ Rys::root3 (double x) noexcept
             weights[1] = (t3 * a1 - a2) / ((t3 - t2) * (t2 - t1));
             weights[0] = weights[0] - weights[1] - weights[2];
             return;
-            }
-        else
-            {
+        } else {
             weights[0] =
                 (((-.18784686463512 * xinv + .22991849164985) * xinv -
                   .49893752514047) * xinv - 2.1916512131607e-5) * g +
@@ -993,17 +890,15 @@ Rys::root3 (double x) noexcept
             weights[1] = (t3 * a1 - a2) / ((t3 - t2) * (t2 - t1));
             weights[0] = weights[0] - weights[1] - weights[2];
             return;
-            }
         }
-    if (x <= 33.0)
-        {
+    }
+    if (x <= 33.0) {
         g = exp (-x);
         weights[0] = ((.1962326414943 * xinv - .4969524146449) * xinv -
                       6.0156581186481e-5) * g + sqrt (pie4 * xinv);
         f1 = (weights[0] - g) / (x + x);
         f2 = (f1 + f1 + f1 - g) / (x + x);
-        if (x <= 20.0)
-            {
+        if (x <= 20.0) {
             roots[0] =
                 ((((((x * -2.43270989903742e-6 + 3.57901398988359e-4) * x -
                      .0234112415981143) * x + .781425144913975) * x -
@@ -1023,9 +918,7 @@ Rys::root3 (double x) noexcept
                   404.996712650414) * x + (-189829.509315154 * xinv +
                                            51149.8390849158) * xinv -
                  6881.45821789955) * g + r33 / (x - r33);
-            }
-        else
-            {
+        } else {
             roots[0] = ((((x * -4.97561537069643e-4 - .0500929599665316) *
                           x + 1.31099142238996) * x - 18.8336409225481) *
                         x - 660.344754467191 * xinv +
@@ -1040,7 +933,7 @@ Rys::root3 (double x) noexcept
                    17.3639054044562) * x - 357.615122086961) * x -
                  14573.4701095912 * xinv + 2698.31813951849) * g +
                 r33 / (x - r33);
-            }
+        }
         t1 = roots[0] / (roots[0] + 1.);
         t2 = roots[1] / (roots[1] + 1.);
         t3 = roots[2] / (roots[2] + 1.);
@@ -1050,10 +943,9 @@ Rys::root3 (double x) noexcept
         weights[1] = (t3 * a1 - a2) / ((t3 - t2) * (t2 - t1));
         weights[0] = weights[0] - weights[1] - weights[2];
         return;
-        }
+    }
     weights[0] = sqrt (pie4 * xinv);
-    if (x <= 47.0)
-        {
+    if (x <= 47.0) {
         g = exp (-x);
         roots[0] = ((x * -7.39058467995275 + 321.318352526305) * x -
                     3994.33696473658) * g + r13 / (x - r13);
@@ -1069,21 +961,20 @@ Rys::root3 (double x) noexcept
              38079.4303087338) * g + w23 * weights[0];
         weights[0] = weights[0] - weights[1] - weights[2];
         return;
-        }
+    }
     roots[0] = r13 / (x - r13);
     roots[1] = r23 / (x - r23);
     roots[2] = r33 / (x - r33);
     weights[1] = w23 * weights[0];
     weights[2] = w33 * weights[0];
     weights[0] = weights[0] - weights[1] - weights[2];
-    }
+}
 
 
 
 
 void
-Rys::root4 (double x) noexcept
-    {
+Rys::root4 (double x) noexcept {
     const double r14 = .145303521503316;
     const double pie4 = .785398163397448;
     const double r24 = 1.33909728812636;
@@ -1096,14 +987,10 @@ Rys::root4 (double x) noexcept
     double g, y, d1, xinv;
 
     xinv = 1.0 / x;
-    if (x <= 15.0)
-        {
-        if (x <= 5.0)
-            {
-            if (x <= 1.0)
-                {
-                if (x <= 3.e-7)
-                    {
+    if (x <= 15.0) {
+        if (x <= 5.0) {
+            if (x <= 1.0) {
+                if (x <= 3.e-7) {
                     /*
                      * x is approx. zero
                      */
@@ -1116,7 +1003,7 @@ Rys::root4 (double x) noexcept
                     weights[2] = .222381034453372 - x * .129314370958973;
                     weights[3] = .101228536290376 - x * .0828299075414321;
                     return;
-                    }
+                }
                 /*
                  * eps < x <= 1
                  */
@@ -1180,7 +1067,7 @@ Rys::root4 (double x) noexcept
                       .034879109737737) * x - .0828299075413889) * x +
                     .101228536290376;
                 return;
-                }
+            }
             /*
              * 1 < x < 5
              */
@@ -1262,9 +1149,8 @@ Rys::root4 (double x) noexcept
                   .00281330044426892) * y - .00716227030134947) * y +
                 .00966077262223353;
             return;
-            }
-        if (x <= 10.0)
-            {
+        }
+        if (x <= 10.0) {
             /*
              * 5<x<10
              */
@@ -1350,7 +1236,7 @@ Rys::root4 (double x) noexcept
                   9.00474771229507e-5) * y - 2.78777909813289e-4) * y +
                 5.26543779837487e-4;
             return;
-            }
+        }
         /*
          *  10<x<=15.0
          */
@@ -1419,12 +1305,10 @@ Rys::root4 (double x) noexcept
               .49893752514047) * xinv - 2.1916512131607e-5) * exp (-x) +
             sqrt (pie4 * xinv) - weights[3] - weights[2] - weights[1];
         return;
-        }
+    }
     weights[0] = sqrt (pie4 * xinv);
-    if (x <= 35.0)
-        {
-        if (x <= 20.0)
-            {
+    if (x <= 35.0) {
+        if (x <= 20.0) {
             /*
              *  15<x<=20
              */
@@ -1509,7 +1393,7 @@ Rys::root4 (double x) noexcept
                  6.0156581186481e-5) * exp (-x) + weights[0] - weights[1] -
                 weights[2] - weights[3];
             return;
-            }
+        }
         /*
          *  20<x<=35.0
          */
@@ -1538,23 +1422,20 @@ Rys::root4 (double x) noexcept
                17083.0039597097) * x - 290517.939780207) * x +
              (34905969.8304732 * xinv - 16494452.2586065) * xinv +
              2968179.40164703) * g + r44 / (x - r44);
-        if (x <= 25.)
-            {
+        if (x <= 25.) {
             weights[3] =
                 (((((((x * 2.33766206773151e-7 - 3.81542906607063e-5) * x +
                       .00351416601267) * x - .166538571864728) * x +
                     4.80006136831847) * x - 87.3165934223603) * x +
                   977.683627474638) * x + 16600.094511764 * xinv -
                  6144.79071209961) * g + w44 * weights[0];
-            }
-        else
-            {
+        } else {
             weights[3] =
                 ((((((x * 5.74245945342286e-6 - 7.58735928102351e-5) * x +
                      2.35072857922892e-4) * x - .00378812134013125) * x +
                    .309871652785805) * x - 7.11108633061306) * x +
                  55.5297573149528) * g + w44 * weights[0];
-            }
+        }
         weights[2] = ((((((x * 2.36392855180768e-4 - .00916785337967013) *
                           x + .462186525041313) * x - 19.694378600654) *
                         x + 499.169195295559) * x - 6214.1984584509) *
@@ -1570,9 +1451,8 @@ Rys::root4 (double x) noexcept
                       6.0156581186481e-5) * g + weights[0] - weights[1] -
                      weights[2] - weights[3];
         return;
-        }
-    if (x <= 53.0)
-        {
+    }
+    if (x <= 53.0) {
         /*
          *  35<x<=53.0
          */
@@ -1594,7 +1474,7 @@ Rys::root4 (double x) noexcept
                       .0814504890732155) * g + w24 * weights[0];
         weights[0] = weights[0] - weights[1] - weights[2] - weights[3];
         return;
-        }
+    }
     roots[0] = r14 / (x - r14);
     roots[1] = r24 / (x - r24);
     roots[2] = r34 / (x - r34);
@@ -1604,10 +1484,9 @@ Rys::root4 (double x) noexcept
     weights[1] = w24 * weights[0];
     weights[0] = weights[0] - weights[1] - weights[2] - weights[3];
     return;
-    }
+}
 
-void Rys::root5 (double x) noexcept
-    {
+void Rys::root5 (double x) noexcept {
     double g, y, xxx, d1;
     const double r15 = .117581320211778;
     const double pie4 = .785398163397448;
@@ -1620,14 +1499,10 @@ void Rys::root5 (double x) noexcept
     const double r55 = 11.8071894899717;
     const double w55 = 8.62130526143657e-6;
 
-    if (x <= 15.0)
-        {
-        if (x <= 5.0)
-            {
-            if (x <= 1.0)
-                {
-                if (x <= 3.e-7)
-                    {
+    if (x <= 15.0) {
+        if (x <= 5.0) {
+            if (x <= 1.0) {
+                if (x <= 3.e-7) {
                     /*
                      *  x is approx zero
                      */
@@ -1642,7 +1517,7 @@ void Rys::root5 (double x) noexcept
                     weights[3] = .14945134915058 - x * .102979262193565;
                     weights[4] = .0666713443086877 - x * .0573782817488315;
                     return;
-                    }
+                }
                 /*
                  *   0 < x < 1
                  */
@@ -1721,7 +1596,7 @@ void Rys::root5 (double x) noexcept
                       .0250889946832192) * x - .0573782817487958) * x +
                     .0666713443086877;
                 return;
-                }
+            }
             /*
              *  1< x <= 5
              */
@@ -1821,9 +1696,8 @@ void Rys::root5 (double x) noexcept
                   .00183524565118203) * y - .00437785737450783) * y +
                 .00536963805223095;
             return;
-            }
-        if (x <= 10.0)
-            {
+        }
+        if (x <= 10.0) {
             /*
              *  5<x<=10.0
              */
@@ -1929,7 +1803,7 @@ void Rys::root5 (double x) noexcept
                   4.52254031046244e-5) * y - 1.2111378215037e-4) * y +
                 1.75013126731224e-4;
             return;
-            }
+        }
         /*
          * 10 < x <= 15.0
          */
@@ -2018,11 +1892,9 @@ void Rys::root5 (double x) noexcept
               1.24621276265907e-6) * y - 4.30868944351523e-6) * y +
             9.94307982432868e-6;
         return;
-        }
-    if (x <= 25.0)
-        {
-        if (x <= 20.0)
-            {
+    }
+    if (x <= 25.0) {
+        if (x <= 20.0) {
             /*
              * 15<x<=20.0
              */
@@ -2127,7 +1999,7 @@ void Rys::root5 (double x) noexcept
                    1.23621614171556e-8) * y + 7.72165684563049e-8) * y -
                  3.59858901591047e-7) * y + 2.43682618601e-6;
             return;
-            }
+        }
         /*
          *  20 <x<= 25.0
          */
@@ -2208,10 +2080,9 @@ void Rys::root5 (double x) noexcept
                1.17842611094141e-9) * y + 7.80430641995926e-9) * y -
              5.9776741740054e-8) * y + 1.65186146094969e-6;
         return;
-        }
+    }
     weights[0] = sqrt (pie4 / x);
-    if (x <= 40.0)
-        {
+    if (x <= 40.0) {
         /*
          *  25 < x <= 40.0
          */
@@ -2274,9 +2145,8 @@ void Rys::root5 (double x) noexcept
             weights[0] - g * .01962 - weights[1] - weights[2] -
             weights[3] - weights[4];
         return;
-        }
-    if (x <= 59.0)
-        {
+    }
+    if (x <= 59.0) {
         /*
          * 40<x<59.0
          */
@@ -2310,7 +2180,7 @@ void Rys::root5 (double x) noexcept
         weights[0] =
             weights[0] - weights[1] - weights[2] - weights[3] - weights[4];
         return;
-        }
+    }
     /*
      *  59.0< x< infinity
      */
@@ -2325,6 +2195,6 @@ void Rys::root5 (double x) noexcept
     weights[4] = w55 * weights[0];
     weights[0] = weights[0] - weights[1] - weights[2] - weights[3] - weights[4];
     return;
-    }
+}
 
 }

@@ -13,17 +13,14 @@
 
 #define MAXFILESIZE 134217728
 
-namespace unomol
-{
+namespace unomol {
 
-struct Sints
-    {
+struct Sints {
     double val;
     int i,j,k,l;
-    };
+};
 
-struct ShellQuartet
-    {
+struct ShellQuartet {
     double ab2,cd2;
     const double *a;
     const double *b;
@@ -44,66 +41,61 @@ struct ShellQuartet
     unsigned int *lstates;
     unsigned int len;
 
-    ShellQuartet(int maxl)
-        {
+    ShellQuartet(int maxl) {
         int maxlst = ((maxl+1)*(maxl+2))/2;
         int maxints = maxlst * maxlst * maxlst * maxlst;
         lstates = new unsigned int[maxints];
-        }
+    }
 
-    ~ShellQuartet()
-        {
+    ~ShellQuartet() {
         delete [] lstates;
-        }
-    };
+    }
+};
 
 std::uint64_t find_max_files(int no_new,int no_old,int nprocs);
 
-class TwoElectronInts
-    {
-    public:
-        TwoElectronInts() = delete;
-        TwoElectronInts(const Basis& basis,
-                        int start_shell,const string& base_str)
-            {
-            strcpy(basename,base_str.c_str());
-            start = start_shell;
-            rank = 0;
-            psize = 1;
+class TwoElectronInts {
+  public:
+    TwoElectronInts() = delete;
+    TwoElectronInts(const Basis& basis,
+                    int start_shell,const string& base_str) {
+        strcpy(basename,base_str.c_str());
+        start = start_shell;
+        rank = 0;
+        psize = 1;
 #ifdef UNOMOL_MPI_ABI_
-            MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-            MPI_Comm_size(MPI_COMM_WORLD,&psize);
+        MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+        MPI_Comm_size(MPI_COMM_WORLD,&psize);
 #endif
-            int maxfiles = find_max_files(basis.number_of_orbitals(),0,psize);
-            numints = new int[maxfiles];
-            calculate(basis);
-            }
-        ~TwoElectronInts() {
-            delete [] numints;
-        }
+        int maxfiles = find_max_files(basis.number_of_orbitals(),0,psize);
+        numints = new int[maxfiles];
+        calculate(basis);
+    }
+    ~TwoElectronInts() {
+        delete [] numints;
+    }
 
-        void calculate(const Basis& base);
+    void calculate(const Basis& base);
 
-        void recalculate(const Basis& base)
-            {
-            calculate(base);
-            }
+    void recalculate(const Basis& base) {
+        calculate(base);
+    }
 
-        void formGmatrix(const double* Pmat,double *Gmat) const;
+    void formGmatrix(const double* Pmat,double *Gmat) const;
 
-        void formGmatrix(const double* PmatA,const double* PmatB,
-                         double* GmatA,double* GmatB) const;
-    private:
-        char basename[72];
-        int start;
-        int rank,psize;
-        int *numints;
-        int nfiles;
-        void calc_two_electron_ints(const ShellQuartet& sq,
-                                    const AuxFunctions& aux,
-                                    Rys& rys,
-                                    Sints* sints);
-    };
+    void formGmatrix(const double* PmatA,const double* PmatB,
+                     double* GmatA,double* GmatB) const;
+  private:
+    char basename[72];
+    int start;
+    int rank,psize;
+    int *numints;
+    int nfiles;
+    void calc_two_electron_ints(const ShellQuartet& sq,
+                                const AuxFunctions& aux,
+                                Rys& rys,
+                                Sints* sints);
+};
 
 
 }
