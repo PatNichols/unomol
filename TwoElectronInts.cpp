@@ -18,7 +18,6 @@ std::uint64_t find_max_files(int no_new,int no_old,int nprocs) {
     return (std::uint64_t)non;
 }
 
-
 void TwoElectronInts::calc_two_electron_ints(const ShellQuartet& sq,
         const AuxFunctions& aux,
         Rys& rys,
@@ -111,10 +110,7 @@ void TwoElectronInts::calc_two_electron_ints(const ShellQuartet& sq,
 void
 TwoElectronInts::calculate(const Basis& basis) {
     const double threshold=1.e-14;
-#ifdef UNOMOL_MPI_API_
     int pknt=0;
-#endif
-    char fname[80];
     const Shell* shell(basis.shell_ptr());
     const Center* center(basis.center_ptr());
     const AuxFunctions& aux(*basis.auxfun_ptr());
@@ -135,8 +131,7 @@ TwoElectronInts::calculate(const Basis& basis) {
     Sints* sints=new Sints[ml4];
     int it;
     const double *dp;
-    make_filename(nfiles,rank,basename,fname);
-    FILE *out=create_file(fname);
+    FILE *out=create_ints_file(0);
     int maxfsize=MAXFILESIZE/sizeof(Sints);
     int fsize=0;
     clock_t s=clock();
@@ -270,8 +265,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                         fclose(out);
                         numints[nfiles]=fsize;
                         ++nfiles;
-                        make_filename(nfiles,rank,basename,fname);
-                        out=create_file(fname);
+                        out=create_ints_file(nfiles);
                         fsize=0;
                     }
                     if (switch34) {
@@ -307,14 +301,12 @@ void
 TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) const {
     const int BINSIZE=1000;
     Sints sints[BINSIZE];
-    char fname[80];
 
     for (int ifile=0; ifile<nfiles; ++ifile) {
         int nints=numints[ifile];
         int nbin=nints/BINSIZE;
         int nex=nints-BINSIZE*nbin;
-        make_filename(ifile,rank,basename,fname);
-        FILE *in=open_file(fname);
+        FILE *in=open_ints_file(ifile);
         if (nex) {
             fread(sints,sizeof(Sints),nex,in);
             for (register int ix=0; ix<nex; ++ix) {
@@ -422,14 +414,12 @@ TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
                              double *GmatA,double *GmatB) const {
     const int BINSIZE=1000;
     Sints sints[BINSIZE];
-    char fname[80];
 
     for (int ifile=0; ifile<nfiles; ++ifile) {
         int nints=numints[ifile];
         int nbin=nints/BINSIZE;
         int nex=nints-BINSIZE*nbin;
-        make_filename(ifile,rank,basename,fname);
-        FILE *in=open_file(fname);
+        FILE *in=open_ints_file(ifile);
         if (nex) {
             fread(sints,sizeof(Sints),nex,in);
             for (register int ix=0; ix<nex; ++ix) {

@@ -95,6 +95,29 @@ class TwoElectronInts {
                                 const AuxFunctions& aux,
                                 Rys& rys,
                                 Sints* sints);
+
+    FILE * create_ints_file(int file_no) const {
+        std::string fname = std::to_string(file_no);
+        fname += "_";
+        fname += std::to_string(rank);
+        fname += "_";
+        fname += basename;
+        FILE * fp = fopen(fname.c_str(),"w");
+        if (fp) return fp;
+        fprintf(stderr,"could not open the file %s\n",fname.c_str());
+        exit(-1);
+    }
+    FILE * open_ints_file(int file_no) const {
+        std::string fname = std::to_string(file_no);
+        fname += "_";
+        fname += std::to_string(rank);
+        fname += "_";
+        fname += basename;
+        FILE * fp = fopen(fname.c_str(),"r");
+        if (fp) return fp;
+        fprintf(stderr,"could not open the file %s\n",fname.c_str());
+        exit(-1);    
+    }
 };
 
 
