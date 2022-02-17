@@ -1,4 +1,2 @@
 /***** COMPUTER GENERATORED CONFIG FILE *****/
-
-#define TMPDIR "./"
-
+#define MPI_ABI 1
