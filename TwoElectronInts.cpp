@@ -3,21 +3,6 @@
 
 namespace unomol {
 
-std::uint64_t find_max_files(int no_new,int no_old,int nprocs) {
-    std::uint64_t non=no_new;
-    non=non*(non+1UL)/2UL;
-    non=non*(non+1UL)/2UL;
-    std::uint64_t noo=no_old;
-    noo=noo*(noo+1UL)/2UL;
-    noo=noo*(noo+1UL)/2UL;
-    non=non-noo;
-    non*=sizeof(Sints);
-    non/=MAXFILESIZE;
-    non/=nprocs;
-    ++non;
-    return (std::uint64_t)non;
-}
-
 void TwoElectronInts::calc_two_electron_ints(const ShellQuartet& sq,
         const AuxFunctions& aux,
         Rys& rys,
@@ -111,6 +96,7 @@ void
 TwoElectronInts::calculate(const Basis& basis) {
     const double threshold=1.e-14;
     int pknt=0;
+    numints.clear();
     const Shell* shell(basis.shell_ptr());
     const Center* center(basis.center_ptr());
     const AuxFunctions& aux(*basis.auxfun_ptr());
@@ -263,7 +249,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                     }
                     if (fsize>maxfsize) {
                         fclose(out);
-                        numints[nfiles]=fsize;
+                        numints.push_back(fsize);
                         ++nfiles;
                         out=create_ints_file(nfiles);
                         fsize=0;
@@ -291,7 +277,7 @@ TwoElectronInts::calculate(const Basis& basis) {
     fprintf(stderr,"Time for Two Electrons Integrals = %10.2le seconds\n",etime);
     if (fsize) {
         fclose(out);
-        numints[nfiles]=fsize;
+        numints.push_back(fsize);
         ++nfiles;
     }
     delete [] sints;

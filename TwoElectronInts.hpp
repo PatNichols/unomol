@@ -3,6 +3,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <vector>
+#include <string>
+#include <cstring>
 #include "pconfig.h"
 #include "Util.hpp"
 #include "Basis.hpp"
@@ -11,7 +14,7 @@
 #include <mpi.h>
 #endif
 
-#define MAXFILESIZE 134217728
+#define MAXFILESIZE 1073741824UL
 
 namespace unomol {
 
@@ -52,14 +55,12 @@ struct ShellQuartet {
     }
 };
 
-std::uint64_t find_max_files(int no_new,int no_old,int nprocs);
-
 class TwoElectronInts {
   public:
     TwoElectronInts() = delete;
     TwoElectronInts(const Basis& basis,
                     int start_shell,const string& base_str) {
-        strcpy(basename,base_str.c_str());
+        basename = base_str;
         start = start_shell;
         rank = 0;
         psize = 1;
@@ -67,12 +68,9 @@ class TwoElectronInts {
         MPI_Comm_rank(MPI_COMM_WORLD,&rank);
         MPI_Comm_size(MPI_COMM_WORLD,&psize);
 #endif
-        int maxfiles = find_max_files(basis.number_of_orbitals(),0,psize);
-        numints = new int[maxfiles];
         calculate(basis);
     }
     ~TwoElectronInts() {
-        delete [] numints;
     }
 
     void calculate(const Basis& base);
@@ -86,10 +84,10 @@ class TwoElectronInts {
     void formGmatrix(const double* PmatA,const double* PmatB,
                      double* GmatA,double* GmatB) const;
   private:
-    char basename[72];
+    std::string basename;
     int start;
     int rank,psize;
-    int *numints;
+    std::vector<int> numints;
     int nfiles;
     void calc_two_electron_ints(const ShellQuartet& sq,
                                 const AuxFunctions& aux,
@@ -97,26 +95,24 @@ class TwoElectronInts {
                                 Sints* sints);
 
     FILE * create_ints_file(int file_no) const {
-        std::string fname = std::to_string(file_no);
-        fname += "_";
-        fname += std::to_string(rank);
-        fname += "_";
-        fname += basename;
-        FILE * fp = fopen(fname.c_str(),"w");
+        if (file_no > 99999) {
+	    fprintf(stderr,"max number of integral files exceeded!\n");
+	    exit(-1);
+        }
+        char fname[127];
+        int e = sprintf(fname,"%.5u_%.5u_%s",file_no,rank,basename.c_str());
+        FILE * fp = fopen(fname,"w");
         if (fp) return fp;
-        fprintf(stderr,"could not open the file %s\n",fname.c_str());
+        fprintf(stderr,"could not open the file %s\n",fname);
         exit(-1);
     }
     FILE * open_ints_file(int file_no) const {
-        std::string fname = std::to_string(file_no);
-        fname += "_";
-        fname += std::to_string(rank);
-        fname += "_";
-        fname += basename;
-        FILE * fp = fopen(fname.c_str(),"r");
+        char fname[127];
+        int e = sprintf(fname,"%.5u_%.5u_%s",file_no,rank,basename.c_str());
+        FILE * fp = fopen(fname,"r");
         if (fp) return fp;
-        fprintf(stderr,"could not open the file %s\n",fname.c_str());
-        exit(-1);    
+        fprintf(stderr,"could not open the file %s\n",fname);
+        exit(-1);
     }
 };
 
