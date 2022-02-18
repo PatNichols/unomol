@@ -164,11 +164,15 @@ class RestrictedHartreeFockMPI {
             }
         }
         im_done=0;
-        iteration=0;
+        iteration=1;
         extrap=0;
         eold=0.0;
         update();
         double init_energy=energy+nucrep;
+        if (scf_accel==1) {
+            update();
+            ++iteration;
+        }
         while (iteration<maxits) {
             MPI_Barrier(MPI_COMM_WORLD);
             MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -176,6 +180,10 @@ class RestrictedHartreeFockMPI {
             if (!rank)  scf_converger();
             update();
             if (!rank) {
+                fprintf(stderr,"Iteration     =  %6d\n",iteration);
+                fprintf(stderr,"Energy        =  %25.16le\n",(eold+nucrep));
+                fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
+                fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
                 if (is_converged()) im_done=1;
             }
         }

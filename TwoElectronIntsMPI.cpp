@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include "TwoElectronInts.hpp"
 
 namespace unomol {
@@ -111,6 +111,8 @@ TwoElectronInts::calculate(const Basis& basis) {
         int lv1=(shell+i)->Lvalue();
         nls1=aux.number_of_lstates(lv1);
     }
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&psize);
     nfiles=0;
     Rys rys(maxl);
     ShellQuartet sq(maxl);
@@ -180,11 +182,9 @@ TwoElectronInts::calculate(const Basis& basis) {
                     sq.d=(center+cen4)->r_vec();
                     sq.cd2=dist_sqr(sq.c,sq.d);
                     nls4=aux.number_of_lstates(sq.lv4);
-#ifdef UNOMOL_MPI_API
                     ++pknt;
                     pknt%=psize;
                     if (pknt!=rank) continue;
-#endif
                     bool switch34=sq.lv3<sq.lv4;
                     if (switch34) {
                         it=sq.npr3;

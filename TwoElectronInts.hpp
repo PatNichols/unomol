@@ -11,9 +11,6 @@
 #include "Basis.hpp"
 #include "Rys.hpp"
 #include "Stopwatch.hpp"
-#ifdef UNOMOL_MPI_ABI
-#include <mpi.h>
-#endif
 
 #define MAXFILESIZE 1073741824UL
 
@@ -65,10 +62,6 @@ class TwoElectronInts {
         start = start_shell;
         rank = 0;
         psize = 1;
-#ifdef UNOMOL_MPI_ABI
-        MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-        MPI_Comm_size(MPI_COMM_WORLD,&psize);
-#endif
         calculate(basis);
     }
     ~TwoElectronInts() {
