@@ -5,13 +5,8 @@ namespace unomol {
 
 void fatal_error(const char* message) {
     fprintf(stderr,"%s\n",message);
-#ifdef _MPI_API_
-    MPI_Abort(MPI_COMM_WORLD,EXIT_FAILURE);
-#else
     exit(EXIT_FAILURE);
-#endif
 }
-
 
 FILE* open_file(const char* name) {
     FILE* fp=fopen(name,"r");

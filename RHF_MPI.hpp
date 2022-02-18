@@ -1,5 +1,6 @@
 #ifndef UNOMOL_RHF_MPI_HPP
 #define UNOMOL_RHF_MPI_HPP
+#define UNOMOL_MPI_ABI
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
@@ -25,6 +26,7 @@ class RestrictedHartreeFockMPI {
 
     RestrictedHartreeFockMPI(Basis* b,
                              const TwoElectronInts* t):basis(*b),tints(*t) {
+        MPI_Comm_size(MPI_COMM_WORLD,&psize);
         MPI_Comm_rank(MPI_COMM_WORLD,&rank);
         nshell=basis.number_of_shells();
         no=basis.number_of_orbitals();
@@ -430,6 +432,7 @@ class RestrictedHartreeFockMPI {
     }
 
     void final_output(double init_energy) {
+        if (rank) return;
         FILE *out=create_file("short.gs.dat");
         fprintf(out,"%25.16le\n",init_energy);
         fprintf(out,"%25.16le\n",energy+nucrep);
@@ -486,6 +489,7 @@ class RestrictedHartreeFockMPI {
 
 
     void OintsOutput() {
+        if (rank) return;
         FILE* out=create_file("intsout.dat");
         fprintf(out,"  UnoMol alpha version \n");
         fprintf(out," If you are using this for serious research you are insane!\n");
@@ -599,6 +603,7 @@ class RestrictedHartreeFockMPI {
     }
 
     void PopulationAnalysis(FILE *out) {
+        if (rank) return;
         const Center *center=basis.center_ptr();
         int ncen=basis.number_of_centers();
         double *Overlap=new double[no*no];
@@ -713,7 +718,7 @@ class RestrictedHartreeFockMPI {
     int maxits,iteration,extrap;
     int no,no2,ncen,nshell,nocc;
     int tno,tno2,tncen,tnshell,scf_accel;
-    int cflag,rank,im_done;
+    int cflag,rank,im_done,psize;
 };
 
 }

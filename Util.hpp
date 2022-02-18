@@ -3,9 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#ifdef _MPI_ABI_
-#include <mpi.h>
-#endif
 #include "pconfig.h"
 using namespace std;
 

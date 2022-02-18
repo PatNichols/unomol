@@ -120,12 +120,8 @@ TwoElectronInts::calculate(const Basis& basis) {
     FILE *out=create_ints_file(0);
     int maxfsize=MAXFILESIZE/sizeof(Sints);
     int fsize=0;
-#ifdef USE_STOPWATCH
     putils::Stopwatch timer;
     timer.start();
-#else
-    double ts = clock();
-#endif    
     for (int ish=start; ish<nshell; ++ish,ir0+=nls1) {
         sq.npr1=(shell+ish)->number_of_prims();
         sq.lv1=(shell+ish)->Lvalue();
@@ -277,15 +273,8 @@ TwoElectronInts::calculate(const Basis& basis) {
             }
         }
     }
-#ifdef USE_TIMER    
     timer.stop();
     std::cerr << "Time for Two Electrons Integrals = " << timer.elapsed_time() << " seconds\n";
-#else
-    double tf = clock();
-    tf -= ts;
-    tf /= CLOCKS_PER_SEC;
-    std::cerr << "Time for Two Electrons Integrals = " << tf << " seconds\n";
-#endif
     if (fsize) {
         fclose(out);
         numints.push_back(fsize);

@@ -12,6 +12,7 @@
 #include "OneElectronInts.hpp"
 #include "SymmPack.hpp"
 #include "FField.hpp"
+#include "Stopwatch.hpp"
 using namespace std;
 
 namespace unomol {
@@ -145,6 +146,8 @@ class RestrictedHartreeFock {
             fprintf(stderr,"both energy and density\n");
             break;
         }
+        putils::Stopwatch timer;
+        timer.start();
         iteration=0;
         extrap=0;
         eold=0.0;
@@ -170,6 +173,8 @@ class RestrictedHartreeFock {
             fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
             fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
         }
+        timer.stop();
+        std::cerr << "SCF time = " << timer.elapsed_time() << " s\n";
         memcpy(PmatGs,Pmat,sizeof(double)*no2);
         for (register int j=no2; j<tno2; ++j) PmatGs[j]=0.0;
         energyGs=energy+nucrep;

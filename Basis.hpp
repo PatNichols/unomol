@@ -168,8 +168,8 @@ class Basis {
   public:
     Basis(const std::string& infile=string("patin.dat")) {
         int xsh,xno,xmaxl;
-        ifstream ain;
-        ifstream in(infile.c_str());
+        std::ifstream ain;
+        std::ifstream in(infile.c_str());
         if (!in) {
             std::string errmsg="could not open file "+infile;
             fatal_error(errmsg.c_str());
