@@ -32,6 +32,10 @@ class MD_Dfunction {
         return dtx[i][j][k];
     };
 
+    constexpr const double * operator()(int i,int j) const noexcept { return dtx[i][j];}
+
+    constexpr double operator()(int i,int j,int k) const noexcept { return dtx[i][j][k];}
+
     constexpr void eval(double abi,double ax,double bx,int l1,int l2) noexcept {
         int ltot=l1+l2;
         if (ltot==0) {

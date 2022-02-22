@@ -51,9 +51,9 @@ class MD_Rfunction {
 
         Fgamma (fm, t, ltot);
         term = -2.0 * w;
-        sterm = 1.0;
+        sterm = sr;
         for (m = 0; m <= ltot; ++m) {
-            r0[m] = sr * sterm * fm[m];
+            r0[m] = sterm * fm[m];
             sterm *= term;
         }
         r[0][0][0] = r0[0];

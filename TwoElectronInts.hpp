@@ -12,11 +12,14 @@
 #include "Rys.hpp"
 #include "Stopwatch.hpp"
 
+#include "MD_Dfunction.hpp"
+#include "MD_Rfunction.hpp"
+
 #define MAXFILESIZE 1073741824UL
 
 namespace unomol {
 
-struct Sints {
+struct TwoInts {
     double val;
     int i,j,k,l;
 };
@@ -53,6 +56,21 @@ struct ShellQuartet {
     }
 };
 
+struct MDInts {
+    MD_Dfunction dx12;
+    MD_Dfunction dy12;
+    MD_Dfunction dz12;
+    MD_Dfunction dx34;
+    MD_Dfunction dy34;
+    MD_Dfunction dz34;
+    MD_Rfunction rfun;
+
+    MDInts(int maxl):dx12(maxl),dy12(maxl),dz12(maxl),dx34(maxl),dy34(maxl),dz34(maxl),rfun(maxl) {
+        std::cerr << "MD ints\n";
+    }
+};
+
+
 class TwoElectronInts {
   public:
     TwoElectronInts() = delete;
@@ -83,10 +101,6 @@ class TwoElectronInts {
     int rank,psize;
     std::vector<int> numints;
     int nfiles;
-    void calc_two_electron_ints(const ShellQuartet& sq,
-                                const AuxFunctions& aux,
-                                Rys& rys,
-                                Sints* sints);
 
     FILE * create_ints_file(int file_no) const {
         if (file_no > 99999) {

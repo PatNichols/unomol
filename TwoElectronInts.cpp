@@ -1,12 +1,167 @@
-
 #include "TwoElectronInts.hpp"
 
 namespace unomol {
 
-void TwoElectronInts::calc_two_electron_ints(const ShellQuartet& sq,
-        const AuxFunctions& aux,
-        Rys& rys,
-        Sints* sints) {
+#define UNO_MASK 0xF
+#define UNO_SHIFT 4U
+#define UNO_SHIFT2 8U
+
+#define UNOMOL_MD_INTS
+
+#ifdef UNOMOL_MD_INTS
+
+void calc_two_electron_ints(const ShellQuartet& sq,
+                            const AuxFunctions& aux,
+                            MDInts& mds,
+                            TwoInts* sints) {
+    double p[3],q[3],pq[3];
+    const double SRterm= 34.9868366552497250;
+    const double threshold=1.e-15;
+    const int lvt12=sq.lv1+sq.lv2;
+    const int lvt34=sq.lv3+sq.lv4;
+    const int lvt=lvt12+lvt34;
+    for (int i=0; i<sq.npr1; ++i) {
+        double axp=sq.al1[i];
+        double c1=sq.co1[i];
+        double f12=1.0;
+        int jend=sq.npr2;
+        if (sq.al1==sq.al2) {
+            f12=2.0;
+            jend=i+1;
+        }
+        for (int j=0; j<jend; ++j) {
+            if (i==j) f12=1.0;
+            double c12=c1*f12*sq.co2[j];
+            double bxp=sq.al2[j];
+            double pxp=axp+bxp;
+            double abi=1.0/pxp;
+            double s12= c12 * std::exp(-axp*bxp*sq.ab2*abi);
+            p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
+            p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
+            p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
+            abi *= 0.5;
+            mds.dx12.eval(abi,(p[0]-sq.a[0]),(p[0]-sq.b[0]),sq.lv1,sq.lv2);
+            mds.dy12.eval(abi,(p[1]-sq.a[1]),(p[1]-sq.b[1]),sq.lv1,sq.lv2);
+            mds.dz12.eval(abi,(p[2]-sq.a[2]),(p[2]-sq.b[2]),sq.lv1,sq.lv2);
+            for (int k=0; k<sq.npr3; ++k) {
+                double cxp=sq.al3[k];
+                double c3=sq.co3[k];
+                double f34=1.0;
+                int lend=sq.npr4;
+                if (sq.al3==sq.al4) {
+                    f34=2.0;
+                    lend=k+1;
+                }
+                for (int l=0; l<lend; ++l) {
+                    if (k==l) f34=1.0;
+                    double c34=c3*f34*sq.co4[l];
+                    double dxp=sq.al4[l];
+                    double qxp=cxp+dxp;
+                    double cdi=1.0/qxp;
+                    double s34= c34 * std::exp(-cxp*dxp*sq.cd2*cdi);
+                    double txp=pxp+qxp;
+                    double sr= SRterm*s12*s34*2.*abi*cdi/sqrt(txp);
+
+                    q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
+                    q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
+                    q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
+
+                    cdi *= 0.5;
+                    mds.dx34.eval(cdi,(q[0]-sq.c[0]),(q[0]-sq.d[0]),sq.lv3,sq.lv4);
+                    mds.dy34.eval(cdi,(q[1]-sq.c[1]),(q[1]-sq.d[1]),sq.lv3,sq.lv4);
+                    mds.dz34.eval(cdi,(q[2]-sq.c[2]),(q[2]-sq.d[2]),sq.lv3,sq.lv4);
+
+                    pq[0] = p[0]-q[0];
+                    pq[1] = p[1]-q[1];
+                    pq[2] = p[2]-q[2];
+                    double pq2 = pq[0]*pq[0] + pq[1]*pq[1] + pq[2]*pq[2];
+                    double w = pxp * qxp / txp;
+                    double t = w * pq2;
+
+                    mds.rfun.eval(sr,t,w,pq,lvt);
+
+                    for (int kc=0; kc<sq.len; ++kc) {
+                        unsigned int key=sq.lstates[kc];
+                        unsigned int lls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int kls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int jls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int ils=key&UNO_MASK;
+                        const double nfact=
+                            aux.normalization_factor(sq.lv1,ils)*
+                            aux.normalization_factor(sq.lv2,jls)*
+                            aux.normalization_factor(sq.lv3,kls)*
+                            aux.normalization_factor(sq.lv4,lls);
+                        const int *lvc1 = aux.l_vector(sq.lv1,ils);
+                        const int *lvc2 = aux.l_vector(sq.lv2,jls);
+                        const int *lvc3 = aux.l_vector(sq.lv3,kls);
+                        const int *lvc4 = aux.l_vector(sq.lv4,lls);
+
+                        int l1 = lvc1[0];
+                        int m1 = lvc1[1];
+                        int n1 = lvc1[2];
+
+                        int l2 = lvc2[0];
+                        int m2 = lvc2[1];
+                        int n2 = lvc2[2];
+
+                        int l12 = l1 + l2;
+                        int m12 = m1 + m2;
+                        int n12 = n1 + n2;
+
+                        int l3 = lvc3[0];
+                        int m3 = lvc3[1];
+                        int n3 = lvc3[2];
+
+                        int l4 = lvc4[0];
+                        int m4 = lvc4[1];
+                        int n4 = lvc4[2];
+
+                        int l34 = l3 + l4;
+                        int m34 = m3 + m4;
+                        int n34 = n3 + n4;
+
+                        double sum = 0;
+
+
+                        for (int ix12=0; ix12<=l12; ++ix12) {
+                            for (int iy12=0; iy12<=m12; ++iy12) {
+                                for (int iz12=0; iz12<=n12; ++iz12) {
+                                    for (int ix34=0; ix34<=l34; ++ix34) {
+                                        for (int iy34=0; iy34<=m34; ++iy34) {
+                                            for (int iz34=0; iz34<=n34; ++iz34) {
+                                                double sx = ((ix34+iy34+iz34)%2) ? -1:1;
+                                                sum += sx *
+                                                       mds.dx12.getValue(l1,l2,ix12) *
+                                                       mds.dy12.getValue(m1,m2,iy12) *
+                                                       mds.dz12.getValue(n1,n2,iz12) *
+                                                       mds.dx34.getValue(l3,l4,ix34) *
+                                                       mds.dy34.getValue(m3,m4,iy34) *
+                                                       mds.dz34.getValue(n3,n4,iz34) *
+                                                       mds.rfun.getValue((ix12+ix34),(iy12+iy34),(iz12+iz34));
+
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        (sints+kc)->val += sum * nfact;
+                    }
+                }
+            }
+        }
+    }
+}
+
+#else
+
+void calc_two_electron_ints(const ShellQuartet& sq,
+                            const AuxFunctions& aux,
+                            Rys& rys,
+                            TwoInts* sints) {
     double p[3],q[3];
     double ab[3],cd[3];
     const double SRterm= 34.9868366552497250;
@@ -63,15 +218,15 @@ void TwoElectronInts::calc_two_electron_ints(const ShellQuartet& sq,
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
                     q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
                     rys.Recur(p,q,sq.a,sq.c,pxp,qxp,txp,lvt12,lvt34,nroots);
-                    for (register int kc=0; kc<sq.len; ++kc) {
+                    for (int kc=0; kc<sq.len; ++kc) {
                         unsigned int key=sq.lstates[kc];
-                        int lls=key&0xF;
-                        key>>=4;
-                        int kls=key&0xF;
-                        key>>=4;
-                        int jls=key&0xF;
-                        key>>=4;
-                        int ils=key&0xF;
+                        int lls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        int kls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        int jls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        int ils=key&UNO_MASK;
                         double nfact=c12*c34*sr*
                                      aux.normalization_factor(sq.lv1,ils)*
                                      aux.normalization_factor(sq.lv2,jls)*
@@ -91,6 +246,7 @@ void TwoElectronInts::calc_two_electron_ints(const ShellQuartet& sq,
     }
 }
 
+#endif
 
 void
 TwoElectronInts::calculate(const Basis& basis) {
@@ -112,13 +268,17 @@ TwoElectronInts::calculate(const Basis& basis) {
         nls1=aux.number_of_lstates(lv1);
     }
     nfiles=0;
+#ifdef UNOMOL_MD_INTS
+    MDInts mds(maxl);
+#else
     Rys rys(maxl);
+#endif
     ShellQuartet sq(maxl);
-    Sints* sints=new Sints[ml4];
+    TwoInts* sints=new TwoInts[ml4];
     int it;
     const double *dp;
     FILE *out=create_ints_file(0);
-    int maxfsize=MAXFILESIZE/sizeof(Sints);
+    int maxfsize=MAXFILESIZE/sizeof(TwoInts);
     int fsize=0;
     putils::Stopwatch timer;
     timer.start();
@@ -205,35 +365,32 @@ TwoElectronInts::calculate(const Basis& basis) {
                     }
                     int knt=0;
                     int ir=ir0;
-                    for (register int ils=0; ils<nls1; ++ils,++ir) {
+                    for (int ils=0; ils<nls1; ++ils,++ir) {
                         int ijr=ir*(ir+1)/2+jr0;
                         int jr=jr0;
                         int jend=nls2;
                         if (ish==jsh) jend=ils+1;
-                        for (register int jls=0; jls<jend; ++ijr,++jr,++jls) {
+                        for (int jls=0; jls<jend; ++ijr,++jr,++jls) {
                             int kr=kr0;
                             int kend=nls3;
                             if (ish==ksh) kend=ils+1;
-                            for (register int kls=0; kls<kend; ++kls,++kr) {
+                            for (int kls=0; kls<kend; ++kls,++kr) {
                                 int klr=kr*(kr+1)/2+lr0;
                                 int lr=lr0;
                                 int lend=nls4;
                                 if (ksh==lsh) lend=kls+1;
-                                for (register int lls=0; lls<lend; ++lr,++klr,++lls) {
+                                for (int lls=0; lls<lend; ++lr,++klr,++lls) {
                                     if (klr>ijr) break;
                                     (sints+knt)->val=0.0;
                                     (sints+knt)->i=(unsigned int)ir;
                                     (sints+knt)->j=(unsigned int)jr;
                                     (sints+knt)->k=(unsigned int)kr;
                                     (sints+knt)->l=(unsigned int)lr;
-                                    unsigned int l12{0U};
-                                    unsigned int l34{0U};
-                                    l12 = (ils<<4) + jls;
-                                    if (switch12) l12=(jls<<4)+ils;
-                                    l34=(kls<<4)+lls;
-                                    if (switch34) l34=(lls<<4)+kls;
-                                    sq.lstates[knt] = 0U;
-                                    sq.lstates[knt]=(l12<<8)+l34;
+                                    unsigned int l12 = (ils<<UNO_SHIFT) + jls;
+                                    if (switch12) l12=(jls<<UNO_SHIFT)+ils;
+                                    unsigned int l34=(kls<<UNO_SHIFT)+lls;
+                                    if (switch34) l34=(lls<<UNO_SHIFT)+kls;
+                                    sq.lstates[knt]=(l12<<(UNO_SHIFT2))+l34;
                                     ++knt;
                                 }
                             }
@@ -241,10 +398,14 @@ TwoElectronInts::calculate(const Basis& basis) {
                     }
                     if (!knt) continue;
                     sq.len=knt;
+#ifdef UNOMOL_MD_INTS
+                    calc_two_electron_ints(sq,aux,mds,sints);
+#else
                     calc_two_electron_ints(sq,aux,rys,sints);
-                    for (register int kc=0; kc<knt; ++kc) {
+#endif
+                    for (int kc=0; kc<knt; ++kc) {
                         if (fabs((sints+kc)->val)>threshold) {
-                            fwrite(sints+kc,sizeof(Sints),1,out);
+                            fwrite(sints+kc,sizeof(TwoInts),1,out);
                             ++fsize;
                         }
                     }
@@ -289,7 +450,7 @@ TwoElectronInts::calculate(const Basis& basis) {
 void
 TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) const {
     const int BINSIZE=1000;
-    Sints sints[BINSIZE];
+    TwoInts sints[BINSIZE];
 
     for (int ifile=0; ifile<nfiles; ++ifile) {
         int nints=numints[ifile];
@@ -297,8 +458,8 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) const {
         int nex=nints-BINSIZE*nbin;
         FILE *in=open_ints_file(ifile);
         if (nex) {
-            fread(sints,sizeof(Sints),nex,in);
-            for (register int ix=0; ix<nex; ++ix) {
+            fread(sints,sizeof(TwoInts),nex,in);
+            for (int ix=0; ix<nex; ++ix) {
                 double val=(sints+ix)->val;
                 int i=(sints+ix)->i;
                 int j=(sints+ix)->j;
@@ -309,16 +470,31 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) const {
                 int ik=ii+k;
                 int il=ii+l;
                 int jk,jl;
-                int kl=k*(k+1)/2+l;
-                if (j>k) {
-                    jk=j*(j+1)/2+k;
+                int kk = ( k * ( k + 1 ) ) / 2;
+                int kl = kk + l;
+                /*
+                                if (j>k) {
+                                    jk=j*(j+1)/2+k;
+                                } else {
+                                    jk=k*(k+1)/2+j;
+                                }
+                                if (j>l) {
+                                    jl=j*(j+1)/2+l;
+                                } else {
+                                    jl=l*(l+1)/2+j;
+                                }
+                */
+                if (j >= k) {
+                    int jj = (j * ( j + 1 ) ) / 2;
+                    jk = jj + k;
+                    jl = jj + l;
                 } else {
-                    jk=k*(k+1)/2+j;
-                }
-                if (j>l) {
-                    jl=j*(j+1)/2+l;
-                } else {
-                    jl=l*(l+1)/2+j;
+                    jk = kk + j;
+                    if (j>l) {
+                        jl=j*(j+1)/2+l;
+                    } else {
+                        jl=l*(l+1)/2+j;
+                    }
                 }
                 double da=val*2.0*Pmat[ij];
                 double db=val*2.0*Pmat[kl];
@@ -346,8 +522,8 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) const {
             }
         }
         for (int ibin=0; ibin<nbin; ++ibin) {
-            fread(sints,sizeof(Sints),BINSIZE,in);
-            for (register int ix=0; ix<BINSIZE; ++ix) {
+            fread(sints,sizeof(TwoInts),BINSIZE,in);
+            for (int ix=0; ix<BINSIZE; ++ix) {
                 double val=(sints+ix)->val;
                 int i=(sints+ix)->i;
                 int j=(sints+ix)->j;
@@ -358,16 +534,31 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) const {
                 int ik=ii+k;
                 int il=ii+l;
                 int jk,jl;
-                int kl=k*(k+1)/2+l;
-                if (j>k) {
-                    jk=j*(j+1)/2+k;
+                int kk = ( k * ( k + 1 ) ) / 2;
+                int kl = kk + l;
+                /*
+                                if (j>k) {
+                                    jk=j*(j+1)/2+k;
+                                } else {
+                                    jk=kk+j;
+                                }
+                                if (j>l) {
+                                    jl=j*(j+1)/2+l;
+                                } else {
+                                    jl=l*(l+1)/2+j;
+                                }
+                */
+                if (j >= k) {
+                    int jj = (j * ( j + 1 ) ) / 2;
+                    jk = jj + k;
+                    jl = jj + l;
                 } else {
-                    jk=k*(k+1)/2+j;
-                }
-                if (j>l) {
-                    jl=j*(j+1)/2+l;
-                } else {
-                    jl=l*(l+1)/2+j;
+                    jk = kk + j;
+                    if (j>l) {
+                        jl=j*(j+1)/2+l;
+                    } else {
+                        jl=l*(l+1)/2+j;
+                    }
                 }
                 double da=val*2.0*Pmat[ij];
                 double db=val*2.0*Pmat[kl];
@@ -402,7 +593,7 @@ void
 TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
                              double *GmatA,double *GmatB) const {
     const int BINSIZE=1000;
-    Sints sints[BINSIZE];
+    TwoInts sints[BINSIZE];
 
     for (int ifile=0; ifile<nfiles; ++ifile) {
         int nints=numints[ifile];
@@ -410,8 +601,8 @@ TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
         int nex=nints-BINSIZE*nbin;
         FILE *in=open_ints_file(ifile);
         if (nex) {
-            fread(sints,sizeof(Sints),nex,in);
-            for (register int ix=0; ix<nex; ++ix) {
+            fread(sints,sizeof(TwoInts),nex,in);
+            for (int ix=0; ix<nex; ++ix) {
                 double val=(sints+ix)->val;
                 int i=(sints+ix)->i;
                 int j=(sints+ix)->j;
@@ -480,8 +671,8 @@ TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
             }
         }
         for (int ibin=0; ibin<nbin; ++ibin) {
-            fread(sints,sizeof(Sints),BINSIZE,in);
-            for (register int ix=0; ix<BINSIZE; ++ix) {
+            fread(sints,sizeof(TwoInts),BINSIZE,in);
+            for (int ix=0; ix<BINSIZE; ++ix) {
                 double val=(sints+ix)->val;
                 int i=(sints+ix)->i;
                 int j=(sints+ix)->j;
