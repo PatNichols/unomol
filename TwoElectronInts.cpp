@@ -20,6 +20,13 @@ void calc_two_electron_ints(const ShellQuartet& sq,
     const int lvt12=sq.lv1+sq.lv2;
     const int lvt34=sq.lv3+sq.lv4;
     const int lvt=lvt12+lvt34;
+    MD_Dfunction& dx12 = mds.dx12;
+    MD_Dfunction& dy12 = mds.dy12;
+    MD_Dfunction& dz12 = mds.dz12;
+    MD_Dfunction& dx34 = mds.dx34;
+    MD_Dfunction& dy34 = mds.dy34;
+    MD_Dfunction& dz34 = mds.dz34;
+    MD_Rfunction& rfun = mds.rfun;
     for (int i=0; i<sq.npr1; ++i) {
         double axp=sq.al1[i];
         double c1=sq.co1[i];
@@ -40,9 +47,9 @@ void calc_two_electron_ints(const ShellQuartet& sq,
             p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
             p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
             abi *= 0.5;
-            mds.dx12.eval(abi,(p[0]-sq.a[0]),(p[0]-sq.b[0]),sq.lv1,sq.lv2);
-            mds.dy12.eval(abi,(p[1]-sq.a[1]),(p[1]-sq.b[1]),sq.lv1,sq.lv2);
-            mds.dz12.eval(abi,(p[2]-sq.a[2]),(p[2]-sq.b[2]),sq.lv1,sq.lv2);
+            dx12.eval(abi,(p[0]-sq.a[0]),(p[0]-sq.b[0]),sq.lv1,sq.lv2);
+            dy12.eval(abi,(p[1]-sq.a[1]),(p[1]-sq.b[1]),sq.lv1,sq.lv2);
+            dz12.eval(abi,(p[2]-sq.a[2]),(p[2]-sq.b[2]),sq.lv1,sq.lv2);
             for (int k=0; k<sq.npr3; ++k) {
                 double cxp=sq.al3[k];
                 double c3=sq.co3[k];
@@ -67,9 +74,9 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
 
                     cdi *= 0.5;
-                    mds.dx34.eval(cdi,(q[0]-sq.c[0]),(q[0]-sq.d[0]),sq.lv3,sq.lv4);
-                    mds.dy34.eval(cdi,(q[1]-sq.c[1]),(q[1]-sq.d[1]),sq.lv3,sq.lv4);
-                    mds.dz34.eval(cdi,(q[2]-sq.c[2]),(q[2]-sq.d[2]),sq.lv3,sq.lv4);
+                    dx34.eval(cdi,(q[0]-sq.c[0]),(q[0]-sq.d[0]),sq.lv3,sq.lv4);
+                    dy34.eval(cdi,(q[1]-sq.c[1]),(q[1]-sq.d[1]),sq.lv3,sq.lv4);
+                    dz34.eval(cdi,(q[2]-sq.c[2]),(q[2]-sq.d[2]),sq.lv3,sq.lv4);
 
                     pq[0] = p[0]-q[0];
                     pq[1] = p[1]-q[1];
@@ -78,7 +85,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     double w = pxp * qxp / txp;
                     double t = w * pq2;
 
-                    mds.rfun.eval(sr,t,w,pq,lvt);
+                    rfun.eval(sr,t,w,pq,lvt);
 
                     for (int kc=0; kc<sq.len; ++kc) {
                         unsigned int key=sq.lstates[kc];
@@ -124,24 +131,25 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         int n34 = n3 + n4;
 
                         double sum = 0;
-
-
+                        
                         for (int ix12=0; ix12<=l12; ++ix12) {
                             for (int iy12=0; iy12<=m12; ++iy12) {
                                 for (int iz12=0; iz12<=n12; ++iz12) {
+                                    double v12 =  dx12.getValue(l1,l2,ix12) *
+                                                  dy12.getValue(m1,m2,iy12) *
+                                                  dz12.getValue(n1,n2,iz12);
                                     for (int ix34=0; ix34<=l34; ++ix34) {
                                         for (int iy34=0; iy34<=m34; ++iy34) {
+                                            const double v34 = v12 * dx34.getValue(l3,l4,ix34) *
+                                                         dy34.getValue(m3,m4,iy34);
+                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz12;
+                                            const double *dzp = dz34.getRow(n3,n4);
+                                            int sx = ((ix34+iy34)%2) ? -1:1;
                                             for (int iz34=0; iz34<=n34; ++iz34) {
-                                                double sx = ((ix34+iy34+iz34)%2) ? -1:1;
-                                                sum += sx *
-                                                       mds.dx12.getValue(l1,l2,ix12) *
-                                                       mds.dy12.getValue(m1,m2,iy12) *
-                                                       mds.dz12.getValue(n1,n2,iz12) *
-                                                       mds.dx34.getValue(l3,l4,ix34) *
-                                                       mds.dy34.getValue(m3,m4,iy34) *
-                                                       mds.dz34.getValue(n3,n4,iz34) *
-                                                       mds.rfun.getValue((ix12+ix34),(iy12+iy34),(iz12+iz34));
-
+                                                sum += sx * v34 *
+                                                       dzp[iz34] *
+                                                       rzp[iz34];
+                                                sx = -sx;
                                             }
                                         }
                                     }
