@@ -22,7 +22,7 @@ class UnRestrictedHartreeFock {
     UnRestrictedHartreeFock()=delete;
 
     UnRestrictedHartreeFock(Basis* b,
-                            const TwoElectronInts* t):basis(*b),tints(*t) {
+                            TwoElectronInts* t):basis(*b),tints(*t) {
         nshell=basis.number_of_shells();
         no=basis.number_of_orbitals();
         no2=no*(no+1)/2;
@@ -126,7 +126,7 @@ class UnRestrictedHartreeFock {
         ++iteration;
     }
 
-    void dpm_update(const TwoElectronInts& xints) noexcept {
+    void dpm_update(TwoElectronInts& xints) noexcept {
         int i;
         for (i=0; i<no2; ++i) {
             GmatA[i]=0.0;
@@ -497,7 +497,7 @@ class UnRestrictedHartreeFock {
         fclose(out);
         AnalyzeMoments(PmatA,PmatB,basis.center_ptr(),ncen,no2);
         AnalyzeMOMoments(CmatA,CmatB,no2,no);
-    };
+    }
 
 
     void OintsOutput() {
@@ -775,7 +775,7 @@ class UnRestrictedHartreeFock {
 
   private:
     Basis& basis;
-    const TwoElectronInts& tints;
+    TwoElectronInts& tints;
     double eps,ediff,pdiff,eold,nucrep,energy;
     double energyGs;
     double *PmatGsA;

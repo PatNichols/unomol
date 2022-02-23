@@ -1,9 +1,9 @@
 CFLAGS=-g -Ofast -fPIC -ffast-math -mtune=native -Wno-unused-result 
-CXXFLAGS=-g -Ofast -fPIC -ffast-math -mtune=native -Wno-unused-result 
+CXXFLAGS=-g -Ofast -fPIC -ffast-math -mtune=native -Wno-unused-result --std=c++17 
 
-SER_FILES= Util.o SymmPack.o Rys.o Moments.o OneElectronInts.o FField.o TwoElectronInts.o GDPMInts.o Unomol.o
+SER_FILES= putils_c.o Util.o SymmPack.o Rys.o Moments.o OneElectronInts.o FField.o TwoElectronInts.o GDPMInts.o Unomol.o
 
-MPI_FILES= Util.o SymmPack.o Rys.o Moments.o OneElectronInts.o FField.o TwoElectronIntsMPI.o GDPMInts.o UnomolMPI.o
+MPI_FILES= putils_c.o Util.o SymmPack.o Rys.o Moments.o OneElectronInts.o FField.o TwoElectronIntsMPI.o GDPMInts.o UnomolMPI.o
 
 all: 	$(SER_FILES)
 	$(CXX) $(CXXFLAGS) -o Unomol $(SER_FILES)
@@ -12,6 +12,7 @@ all: 	$(SER_FILES)
 
 mpilib:
 	rm -f *.o
+	$(MPICC) $(CFLAGS) -c putils_c.c
 	$(MPICXX) $(CXXFLAGS) -c Util.cpp
 	$(MPICXX) $(CXXFLAGS) -c SymmPack.cpp
 	$(MPICXX) $(CXXFLAGS) -c Rys.cpp
@@ -19,7 +20,7 @@ mpilib:
 	$(MPICXX) $(CXXFLAGS) -c FField.cpp
 	$(MPICXX) $(CXXFLAGS) -c Moments.cpp
 	$(MPICXX) $(CXXFLAGS) -c GDPMInts.cpp
-	$(MPICXX) $(CXXFLAGS) -DUNOMOL_MPI_ABI -c TwoElectronIntsMPI.cpp
+	$(MPICXX) $(CXXFLAGS) -c TwoElectronIntsMPI.cpp
 	$(MPICXX) $(CXXFLAGS) -c UnomolMPI.cc
 	$(MPICXX) $(CXXFLAGS) -o UnomolMPI $(MPI_FILES)
 		

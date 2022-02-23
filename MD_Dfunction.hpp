@@ -18,19 +18,19 @@ class MD_Dfunction {
         asize1=lmax+1;
         int asize2=2*lmax+1;
         dtx=new_tensor3< double >(asize1,asize1,asize2);
-    };
+    }
 
     ~MD_Dfunction() {
         delete_tensor3<double>(dtx,asize1,asize1);
-    };
+    }
 
     constexpr const double* getRow(int i,int j) const noexcept {
         return dtx[i][j];
-    };
+    }
 
     constexpr double getValue(int i,int j,int k) const noexcept {
         return dtx[i][j][k];
-    };
+    }
 
     constexpr const double * operator()(int i,int j) const noexcept { return dtx[i][j];}
 
@@ -69,7 +69,7 @@ class MD_Dfunction {
                 dtx[j][i][ipj]=abi*dtx[jm1][i][ipj-1];
             }
         }
-    };
+    }
 };
 
 }

@@ -11,7 +11,7 @@
 #include "Basis.hpp"
 #include "Rys.hpp"
 #include "Stopwatch.hpp"
-
+#include "FileCache.hpp"
 #include "MD_Dfunction.hpp"
 #include "MD_Rfunction.hpp"
 
@@ -56,6 +56,7 @@ struct ShellQuartet {
     }
 };
 
+
 struct MDInts {
     MD_Dfunction dx12;
     MD_Dfunction dy12;
@@ -70,18 +71,17 @@ struct MDInts {
     }
 };
 
-
 class TwoElectronInts {
   public:
     TwoElectronInts() = delete;
+
     TwoElectronInts(const Basis& basis,
-                    int start_shell,const string& base_str) {
-        basename = base_str;
-        start = start_shell;
-        rank = 0;
-        psize = 1;
+                                 int start_shell,const string& base_str):
+        start(start_shell),rank(0),psize(1),cache(std::string("./"),std::string(base_str+"_0_"))
+    {
         calculate(basis);
     }
+
     ~TwoElectronInts() {
     }
 
@@ -91,37 +91,14 @@ class TwoElectronInts {
         calculate(base);
     }
 
-    void formGmatrix(const double* Pmat,double *Gmat) const;
+    void formGmatrix(const double* Pmat,double *Gmat);
 
     void formGmatrix(const double* PmatA,const double* PmatB,
-                     double* GmatA,double* GmatB) const;
+                     double* GmatA,double* GmatB);
   private:
-    std::string basename;
     int start;
     int rank,psize;
-    std::vector<int> numints;
-    int nfiles;
-
-    FILE * create_ints_file(int file_no) const {
-        if (file_no > 99999) {
-	    fprintf(stderr,"max number of integral files exceeded!\n");
-	    exit(-1);
-        }
-        char fname[127];
-        int e = sprintf(fname,"%.5u_%.5u_%s",file_no,rank,basename.c_str());
-        FILE * fp = fopen(fname,"w");
-        if (fp) return fp;
-        fprintf(stderr,"could not open the file %s\n",fname);
-        exit(-1);
-    }
-    FILE * open_ints_file(int file_no) const {
-        char fname[127];
-        int e = sprintf(fname,"%.5u_%.5u_%s",file_no,rank,basename.c_str());
-        FILE * fp = fopen(fname,"r");
-        if (fp) return fp;
-        fprintf(stderr,"could not open the file %s\n",fname);
-        exit(-1);
-    }
+    putils::FileCache cache;
 };
 
 

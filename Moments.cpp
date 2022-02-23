@@ -6,7 +6,7 @@ void calc_moments (MomInts * mvals,
                    ShellPairData & sp,
                    const AuxFunctions & aux,
                    MD_Dfunction & dx, MD_Dfunction & dy, MD_Dfunction & dz) {
-    register int ipr, jpr, kc;
+    int ipr, jpr, kc;
     int l1, m1, n1, l2, m2, n2, ls1, ls2;
     double c1, c12, axp, bxp, pxp, abi, p[3], s12, nfact, ovl, sov, pvx, pvy,
            pvz;
@@ -170,7 +170,7 @@ void MomentInts (const Basis & basis ) {
             calc_moments (mvals, sp, aux, dx, dy, dz);
             fwrite(mvals,sizeof(MomInts),knt,rout);
             for (int ils = 0; ils < sp.len; ++ils) {
-                register double fact = factors[ils];
+                double fact = factors[ils];
                 (((mvals + ils)->dx)) *= fact;
                 ((mvals + ils)->dy) *= fact;
                 ((mvals + ils)->dz) *= fact;

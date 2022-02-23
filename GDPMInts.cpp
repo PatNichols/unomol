@@ -56,7 +56,7 @@ void calc_gdpm_ints(
                 q[1]=(cxp*sq.a[1]+dxp*sq.b[1])*cdi;
                 q[2]=(cxp*sq.a[2]+dxp*sq.b[2])*cdi;
                 rys.Recur(p,q,p,sq.a,pxp,qxp,txp,0,lvt12,nroots);
-                for (register int kc=0; kc<sq.len; ++kc) {
+                for (int kc=0; kc<sq.len; ++kc) {
                     auto key=sq.lstates[kc];
                     int jls=key&0xF;
                     key>>=4;

@@ -6,7 +6,8 @@ namespace unomol {
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
 
-#define UNOMOL_MD_INTS
+
+//#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
 
@@ -16,7 +17,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                             TwoInts* sints) {
     double p[3],q[3],pq[3];
     const double SRterm= 34.9868366552497250;
-    const double threshold=1.e-15;
+    const double threshold=1.e-12;
     const int lvt12=sq.lv1+sq.lv2;
     const int lvt34=sq.lv3+sq.lv4;
     const int lvt=lvt12+lvt34;
@@ -131,7 +132,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         int n34 = n3 + n4;
 
                         double sum = 0;
-                        
+
                         for (int ix12=0; ix12<=l12; ++ix12) {
                             for (int iy12=0; iy12<=m12; ++iy12) {
                                 for (int iz12=0; iz12<=n12; ++iz12) {
@@ -141,7 +142,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                                     for (int ix34=0; ix34<=l34; ++ix34) {
                                         for (int iy34=0; iy34<=m34; ++iy34) {
                                             const double v34 = v12 * dx34.getValue(l3,l4,ix34) *
-                                                         dy34.getValue(m3,m4,iy34);
+                                                               dy34.getValue(m3,m4,iy34);
                                             const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz12;
                                             const double *dzp = dz34.getRow(n3,n4);
                                             int sx = ((ix34+iy34)%2) ? -1:1;
@@ -173,7 +174,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
     double p[3],q[3];
     double ab[3],cd[3];
     const double SRterm= 34.9868366552497250;
-    const double threshold=1.e-15;
+    const double threshold=1.e-12;
     ab[0]=sq.a[0]-sq.b[0];
     ab[1]=sq.a[1]-sq.b[1];
     ab[2]=sq.a[2]-sq.b[2];
@@ -260,7 +261,6 @@ void
 TwoElectronInts::calculate(const Basis& basis) {
     const double threshold=1.e-14;
     int pknt=0;
-    numints.clear();
     const Shell* shell(basis.shell_ptr());
     const Center* center(basis.center_ptr());
     const AuxFunctions& aux(*basis.auxfun_ptr());
@@ -275,7 +275,6 @@ TwoElectronInts::calculate(const Basis& basis) {
         int lv1=(shell+i)->Lvalue();
         nls1=aux.number_of_lstates(lv1);
     }
-    nfiles=0;
 #ifdef UNOMOL_MD_INTS
     MDInts mds(maxl);
 #else
@@ -285,9 +284,7 @@ TwoElectronInts::calculate(const Basis& basis) {
     TwoInts* sints=new TwoInts[ml4];
     int it;
     const double *dp;
-    FILE *out=create_ints_file(0);
-    int maxfsize=MAXFILESIZE/sizeof(TwoInts);
-    int fsize=0;
+    cache.open_for_writing();
     putils::Stopwatch timer;
     timer.start();
     for (int ish=start; ish<nshell; ++ish,ir0+=nls1) {
@@ -413,16 +410,8 @@ TwoElectronInts::calculate(const Basis& basis) {
 #endif
                     for (int kc=0; kc<knt; ++kc) {
                         if (fabs((sints+kc)->val)>threshold) {
-                            fwrite(sints+kc,sizeof(TwoInts),1,out);
-                            ++fsize;
+                            cache.write(sints+kc,1);
                         }
-                    }
-                    if (fsize>maxfsize) {
-                        fclose(out);
-                        numints.push_back(fsize);
-                        ++nfiles;
-                        out=create_ints_file(nfiles);
-                        fsize=0;
                     }
                     if (switch34) {
                         sq.npr3=sq.npr4;
@@ -443,313 +432,280 @@ TwoElectronInts::calculate(const Basis& basis) {
         }
     }
     timer.stop();
+    cache.close();
     std::cerr << "Time for Two Electrons Integrals = " << timer.elapsed_time() << " seconds\n";
-    if (fsize) {
-        fclose(out);
-        numints.push_back(fsize);
-        ++nfiles;
-    }
-    size_t cnt_ints = 0;
-    for ( int c : numints) cnt_ints += c;
-    std::cerr << " # of integrals = " << cnt_ints << "\n";
+    size_t nb = cache.total_size()/sizeof(TwoInts);
+    std::cerr << " # of integrals = " << nb << "\n";
     delete [] sints;
 }
 
 void
-TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) const {
-    const int BINSIZE=1000;
+TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
+    constexpr const int BINSIZE=1024;
     TwoInts sints[BINSIZE];
 
-    for (int ifile=0; ifile<nfiles; ++ifile) {
-        int nints=numints[ifile];
-        int nbin=nints/BINSIZE;
-        int nex=nints-BINSIZE*nbin;
-        FILE *in=open_ints_file(ifile);
-        if (nex) {
-            fread(sints,sizeof(TwoInts),nex,in);
-            for (int ix=0; ix<nex; ++ix) {
-                double val=(sints+ix)->val;
-                int i=(sints+ix)->i;
-                int j=(sints+ix)->j;
-                int k=(sints+ix)->k;
-                int l=(sints+ix)->l;
-                int ii=i*(i+1)/2;
-                int ij=ii+j;
-                int ik=ii+k;
-                int il=ii+l;
-                int jk,jl;
-                int kk = ( k * ( k + 1 ) ) / 2;
-                int kl = kk + l;
-                /*
-                                if (j>k) {
-                                    jk=j*(j+1)/2+k;
-                                } else {
-                                    jk=k*(k+1)/2+j;
-                                }
-                                if (j>l) {
-                                    jl=j*(j+1)/2+l;
-                                } else {
-                                    jl=l*(l+1)/2+j;
-                                }
-                */
-                if (j >= k) {
-                    int jj = (j * ( j + 1 ) ) / 2;
-                    jk = jj + k;
-                    jl = jj + l;
+    cache.open_for_reading();
+    size_t nints = cache.total_size()/sizeof(TwoInts);
+    size_t nbin = nints/BINSIZE;
+    size_t nextra = nints%BINSIZE;
+    for (int ibin=0; ibin<nbin; ++ibin) {
+        cache.read(sints,BINSIZE);
+        for (int ix=0; ix<BINSIZE; ++ix) {
+            double val=(sints+ix)->val;
+            int i=(sints+ix)->i;
+            int j=(sints+ix)->j;
+            int k=(sints+ix)->k;
+            int l=(sints+ix)->l;
+            int ii=i*(i+1)/2;
+            int ij=ii+j;
+            int ik=ii+k;
+            int il=ii+l;
+            int jk,jl;
+            int kk = ( k * ( k + 1 ) ) / 2;
+            int kl = kk + l;
+            if (j >= k) {
+                int jj = (j * ( j + 1 ) ) / 2;
+                jk = jj + k;
+                jl = jj + l;
+            } else {
+                jk = kk + j;
+                if (j>l) {
+                    jl=j*(j+1)/2+l;
                 } else {
-                    jk = kk + j;
-                    if (j>l) {
-                        jl=j*(j+1)/2+l;
-                    } else {
-                        jl=l*(l+1)/2+j;
-                    }
-                }
-                double da=val*2.0*Pmat[ij];
-                double db=val*2.0*Pmat[kl];
-                double sjl=val*Pmat[ik];
-                double sjk=val*Pmat[il];
-                double sik=val*Pmat[jl];
-                double sil=val*Pmat[jk];
-                if (k!=l) {
-                    db=db+db;
-                    Gmat[ik]-=sik;
-                    if (i!=j && j>=k) Gmat[jk]-=sjk;
-                }
-                Gmat[il]-=sil;
-                Gmat[ij]+=db;
-                if (i!=j && j>=l) Gmat[jl]-=sjl;
-                if (ij!=kl) {
-                    if (i!=j) da=da+da;
-                    if (j<=k) {
-                        Gmat[jk]-=sjk;
-                        if (i!=j && i<=k) Gmat[ik]-=sik;
-                        if (k!=l && j<=l) Gmat[jl]-=sjl;
-                    }
-                    Gmat[kl]+=da;
+                    jl=l*(l+1)/2+j;
                 }
             }
-        }
-        for (int ibin=0; ibin<nbin; ++ibin) {
-            fread(sints,sizeof(TwoInts),BINSIZE,in);
-            for (int ix=0; ix<BINSIZE; ++ix) {
-                double val=(sints+ix)->val;
-                int i=(sints+ix)->i;
-                int j=(sints+ix)->j;
-                int k=(sints+ix)->k;
-                int l=(sints+ix)->l;
-                int ii=i*(i+1)/2;
-                int ij=ii+j;
-                int ik=ii+k;
-                int il=ii+l;
-                int jk,jl;
-                int kk = ( k * ( k + 1 ) ) / 2;
-                int kl = kk + l;
-                /*
-                                if (j>k) {
-                                    jk=j*(j+1)/2+k;
-                                } else {
-                                    jk=kk+j;
-                                }
-                                if (j>l) {
-                                    jl=j*(j+1)/2+l;
-                                } else {
-                                    jl=l*(l+1)/2+j;
-                                }
-                */
-                if (j >= k) {
-                    int jj = (j * ( j + 1 ) ) / 2;
-                    jk = jj + k;
-                    jl = jj + l;
-                } else {
-                    jk = kk + j;
-                    if (j>l) {
-                        jl=j*(j+1)/2+l;
-                    } else {
-                        jl=l*(l+1)/2+j;
-                    }
+            double da=val*2.0*Pmat[ij];
+            double db=val*2.0*Pmat[kl];
+            double sjl=val*Pmat[ik];
+            double sjk=val*Pmat[il];
+            double sik=val*Pmat[jl];
+            double sil=val*Pmat[jk];
+            if (k!=l) {
+                db=db+db;
+                Gmat[ik]-=sik;
+                if (i!=j && j>=k) Gmat[jk]-=sjk;
+            }
+            Gmat[il]-=sil;
+            Gmat[ij]+=db;
+            if (i!=j && j>=l) Gmat[jl]-=sjl;
+            if (ij!=kl) {
+                if (i!=j) da=da+da;
+                if (j<=k) {
+                    Gmat[jk]-=sjk;
+                    if (i!=j && i<=k) Gmat[ik]-=sik;
+                    if (k!=l && j<=l) Gmat[jl]-=sjl;
                 }
-                double da=val*2.0*Pmat[ij];
-                double db=val*2.0*Pmat[kl];
-                double sjl=val*Pmat[ik];
-                double sjk=val*Pmat[il];
-                double sik=val*Pmat[jl];
-                double sil=val*Pmat[jk];
-                if (k!=l) {
-                    db=db+db;
-                    Gmat[ik]-=sik;
-                    if (i!=j && j>=k) Gmat[jk]-=sjk;
-                }
-                Gmat[il]-=sil;
-                Gmat[ij]+=db;
-                if (i!=j && j>=l) Gmat[jl]-=sjl;
-                if (ij!=kl) {
-                    if (i!=j) da=da+da;
-                    if (j<=k) {
-                        Gmat[jk]-=sjk;
-                        if (i!=j && i<=k) Gmat[ik]-=sik;
-                        if (k!=l && j<=l) Gmat[jl]-=sjl;
-                    }
-                    Gmat[kl]+=da;
-                }
+                Gmat[kl]+=da;
             }
         }
-        fclose(in);
     }
+    if (nextra) {
+        cache.read(sints,nextra);
+        for (int ix=0; ix<nextra; ++ix) {
+            double val=(sints+ix)->val;
+            int i=(sints+ix)->i;
+            int j=(sints+ix)->j;
+            int k=(sints+ix)->k;
+            int l=(sints+ix)->l;
+            int ii=i*(i+1)/2;
+            int ij=ii+j;
+            int ik=ii+k;
+            int il=ii+l;
+            int jk,jl;
+            int kk = ( k * ( k + 1 ) ) / 2;
+            int kl = kk + l;
+            if (j >= k) {
+                int jj = (j * ( j + 1 ) ) / 2;
+                jk = jj + k;
+                jl = jj + l;
+            } else {
+                jk = kk + j;
+                if (j>l) {
+                    jl=j*(j+1)/2+l;
+                } else {
+                    jl=l*(l+1)/2+j;
+                }
+            }
+            double da=val*2.0*Pmat[ij];
+            double db=val*2.0*Pmat[kl];
+            double sjl=val*Pmat[ik];
+            double sjk=val*Pmat[il];
+            double sik=val*Pmat[jl];
+            double sil=val*Pmat[jk];
+            if (k!=l) {
+                db=db+db;
+                Gmat[ik]-=sik;
+                if (i!=j && j>=k) Gmat[jk]-=sjk;
+            }
+            Gmat[il]-=sil;
+            Gmat[ij]+=db;
+            if (i!=j && j>=l) Gmat[jl]-=sjl;
+            if (ij!=kl) {
+                if (i!=j) da=da+da;
+                if (j<=k) {
+                    Gmat[jk]-=sjk;
+                    if (i!=j && i<=k) Gmat[ik]-=sik;
+                    if (k!=l && j<=l) Gmat[jl]-=sjl;
+                }
+                Gmat[kl]+=da;
+            }
+        } 
+    }
+    cache.close();
 }
 
 void
 TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
-                             double *GmatA,double *GmatB) const {
-    const int BINSIZE=1000;
+                             double *GmatA,double *GmatB) {
+    constexpr const int BINSIZE=1024;
     TwoInts sints[BINSIZE];
 
-    for (int ifile=0; ifile<nfiles; ++ifile) {
-        int nints=numints[ifile];
-        int nbin=nints/BINSIZE;
-        int nex=nints-BINSIZE*nbin;
-        FILE *in=open_ints_file(ifile);
-        if (nex) {
-            fread(sints,sizeof(TwoInts),nex,in);
-            for (int ix=0; ix<nex; ++ix) {
-                double val=(sints+ix)->val;
-                int i=(sints+ix)->i;
-                int j=(sints+ix)->j;
-                int k=(sints+ix)->k;
-                int l=(sints+ix)->l;
-                int ii=i*(i+1)/2;
-                int ij=ii+j;
-                int ik=ii+k;
-                int il=ii+l;
-                int jk,jl;
-                int kl=k*(k+1)/2+l;
-                if (j>k) {
-                    jk=j*(j+1)/2+k;
-                } else {
-                    jk=k*(k+1)/2+j;
-                }
-                if (j>l) {
-                    jl=j*(j+1)/2+l;
-                } else {
-                    jl=l*(l+1)/2+j;
-                }
-                double da=val*(PmatA[ij]+PmatB[ij]);
-                double db=val*(PmatA[kl]+PmatB[kl]);
-                double sjlA=val*PmatA[ik];
-                double sjkA=val*PmatA[il];
-                double sikA=val*PmatA[jl];
-                double silA=val*PmatA[jk];
-                double sjlB=val*PmatB[ik];
-                double sjkB=val*PmatB[il];
-                double sikB=val*PmatB[jl];
-                double silB=val*PmatB[jk];
-                if (k!=l) {
-                    db=db+db;
-                    GmatA[ik]-=sikA;
-                    GmatB[ik]-=sikB;
-                    if (i!=j && j>=k) {
-                        GmatA[jk]-=sjkA;
-                        GmatB[jk]-=sjkB;
-                    }
-                }
-                GmatA[il]-=silA;
-                GmatA[ij]+=db;
-                GmatB[il]-=silB;
-                GmatB[ij]+=db;
-                if (i!=j && j>=l) {
-                    GmatA[jl]-=sjlA;
-                    GmatB[jl]-=sjlB;
-                }
-                if (ij!=kl) {
-                    if (i!=j) da=da+da;
-                    if (j<=k) {
-                        GmatA[jk]-=sjkA;
-                        GmatB[jk]-=sjkB;
-                        if (i!=j && i<=k) {
-                            GmatA[ik]-=sikA;
-                            GmatB[ik]-=sikB;
-                        }
-                        if (k!=l && j<=l) {
-                            GmatA[jl]-=sjlA;
-                            GmatB[jl]-=sjlB;
-                        }
-                    }
-                    GmatA[kl]+=da;
-                    GmatB[kl]+=da;
+    cache.open_for_reading();
+    size_t nints = cache.total_size()/sizeof(TwoInts);
+    size_t nbin = nints/BINSIZE;
+    size_t nextra = nints%BINSIZE;
+    for (size_t ibin=0; ibin<nbin; ++ibin) {
+        cache.read(sints,BINSIZE);
+        for (int ix=0; ix<BINSIZE; ++ix) {
+            double val=(sints+ix)->val;
+            int i=(sints+ix)->i;
+            int j=(sints+ix)->j;
+            int k=(sints+ix)->k;
+            int l=(sints+ix)->l;
+            int ii=i*(i+1)/2;
+            int ij=ii+j;
+            int ik=ii+k;
+            int il=ii+l;
+            int jk,jl;
+            int kl=k*(k+1)/2+l;
+            if (j>k) {
+                jk=j*(j+1)/2+k;
+            } else {
+                jk=k*(k+1)/2+j;
+            }
+            if (j>l) {
+                jl=j*(j+1)/2+l;
+            } else {
+                jl=l*(l+1)/2+j;
+            }
+            double da=val*(PmatA[ij]+PmatB[ij]);
+            double db=val*(PmatA[kl]+PmatB[kl]);
+            double sjlA=val*PmatA[ik];
+            double sjkA=val*PmatA[il];
+            double sikA=val*PmatA[jl];
+            double silA=val*PmatA[jk];
+            double sjlB=val*PmatB[ik];
+            double sjkB=val*PmatB[il];
+            double sikB=val*PmatB[jl];
+            double silB=val*PmatB[jk];
+            if (k!=l) {
+                db=db+db;
+                GmatA[ik]-=sikA;
+                GmatB[ik]-=sikB;
+                if (i!=j && j>=k) {
+                    GmatA[jk]-=sjkA;
+                    GmatB[jk]-=sjkB;
                 }
             }
-        }
-        for (int ibin=0; ibin<nbin; ++ibin) {
-            fread(sints,sizeof(TwoInts),BINSIZE,in);
-            for (int ix=0; ix<BINSIZE; ++ix) {
-                double val=(sints+ix)->val;
-                int i=(sints+ix)->i;
-                int j=(sints+ix)->j;
-                int k=(sints+ix)->k;
-                int l=(sints+ix)->l;
-                int ii=i*(i+1)/2;
-                int ij=ii+j;
-                int ik=ii+k;
-                int il=ii+l;
-                int jk,jl;
-                int kl=k*(k+1)/2+l;
-                if (j>k) {
-                    jk=j*(j+1)/2+k;
-                } else {
-                    jk=k*(k+1)/2+j;
-                }
-                if (j>l) {
-                    jl=j*(j+1)/2+l;
-                } else {
-                    jl=l*(l+1)/2+j;
-                }
-                double da=val*(PmatA[ij]+PmatB[ij]);
-                double db=val*(PmatA[kl]+PmatB[kl]);
-                double sjlA=val*PmatA[ik];
-                double sjkA=val*PmatA[il];
-                double sikA=val*PmatA[jl];
-                double silA=val*PmatA[jk];
-                double sjlB=val*PmatB[ik];
-                double sjkB=val*PmatB[il];
-                double sikB=val*PmatB[jl];
-                double silB=val*PmatB[jk];
-                if (k!=l) {
-                    db=db+db;
-                    GmatA[ik]-=sikA;
-                    GmatB[ik]-=sikB;
-                    if (i!=j && j>=k) {
-                        GmatA[jk]-=sjkA;
-                        GmatB[jk]-=sjkB;
+            GmatA[il]-=silA;
+            GmatA[ij]+=db;
+            GmatB[il]-=silB;
+            GmatB[ij]+=db;
+            if (i!=j && j>=l) {
+                GmatA[jl]-=sjlA;
+                GmatB[jl]-=sjlB;
+            }
+            if (ij!=kl) {
+                if (i!=j) da=da+da;
+                if (j<=k) {
+                    GmatA[jk]-=sjkA;
+                    GmatB[jk]-=sjkB;
+                    if (i!=j && i<=k) {
+                        GmatA[ik]-=sikA;
+                        GmatB[ik]-=sikB;
+                    }
+                    if (k!=l && j<=l) {
+                        GmatA[jl]-=sjlA;
+                        GmatB[jl]-=sjlB;
                     }
                 }
-                GmatA[il]-=silA;
-                GmatA[ij]+=db;
-                GmatB[il]-=silB;
-                GmatB[ij]+=db;
-                if (i!=j && j>=l) {
-                    GmatA[jl]-=sjlA;
-                    GmatB[jl]-=sjlB;
-                }
-                if (ij!=kl) {
-                    if (i!=j) da=da+da;
-                    if (j<=k) {
-                        GmatA[jk]-=sjkA;
-                        GmatB[jk]-=sjkB;
-                        if (i!=j && i<=k) {
-                            GmatA[ik]-=sikA;
-                            GmatB[ik]-=sikB;
-                        }
-                        if (k!=l && j<=l) {
-                            GmatA[jl]-=sjlA;
-                            GmatB[jl]-=sjlB;
-                        }
-                    }
-                    GmatA[kl]+=da;
-                    GmatB[kl]+=da;
-                }
+                GmatA[kl]+=da;
+                GmatB[kl]+=da;
             }
         }
-        fclose(in);
     }
+    if (nextra!=0) {
+        cache.read(sints,nextra);
+        for (int ix=0; ix<nextra; ++ix) {
+            double val=(sints+ix)->val;
+            int i=(sints+ix)->i;
+            int j=(sints+ix)->j;
+            int k=(sints+ix)->k;
+            int l=(sints+ix)->l;
+            int ii=i*(i+1)/2;
+            int ij=ii+j;
+            int ik=ii+k;
+            int il=ii+l;
+            int jk,jl;
+            int kl=k*(k+1)/2+l;
+            if (j>k) {
+                jk=j*(j+1)/2+k;
+            } else {
+                jk=k*(k+1)/2+j;
+            }
+            if (j>l) {
+                jl=j*(j+1)/2+l;
+            } else {
+                jl=l*(l+1)/2+j;
+            }
+            double da=val*(PmatA[ij]+PmatB[ij]);
+            double db=val*(PmatA[kl]+PmatB[kl]);
+            double sjlA=val*PmatA[ik];
+            double sjkA=val*PmatA[il];
+            double sikA=val*PmatA[jl];
+            double silA=val*PmatA[jk];
+            double sjlB=val*PmatB[ik];
+            double sjkB=val*PmatB[il];
+            double sikB=val*PmatB[jl];
+            double silB=val*PmatB[jk];
+            if (k!=l) {
+                db=db+db;
+                GmatA[ik]-=sikA;
+                GmatB[ik]-=sikB;
+                if (i!=j && j>=k) {
+                    GmatA[jk]-=sjkA;
+                    GmatB[jk]-=sjkB;
+                }
+            }
+            GmatA[il]-=silA;
+            GmatA[ij]+=db;
+            GmatB[il]-=silB;
+            GmatB[ij]+=db;
+            if (i!=j && j>=l) {
+                GmatA[jl]-=sjlA;
+                GmatB[jl]-=sjlB;
+            }
+            if (ij!=kl) {
+                if (i!=j) da=da+da;
+                if (j<=k) {
+                    GmatA[jk]-=sjkA;
+                    GmatB[jk]-=sjkB;
+                    if (i!=j && i<=k) {
+                        GmatA[ik]-=sikA;
+                        GmatB[ik]-=sikB;
+                    }
+                    if (k!=l && j<=l) {
+                        GmatA[jl]-=sjlA;
+                        GmatB[jl]-=sjlB;
+                    }
+                }
+                GmatA[kl]+=da;
+                GmatB[kl]+=da;
+            }
+        }
+    }
+    cache.close();
 }
 
 }

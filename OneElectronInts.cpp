@@ -10,7 +10,7 @@ void calc_one_electron_ints(
     const AuxFunctions& aux,
     MD_Dfunction& dx,MD_Dfunction& dy,MD_Dfunction& dz,
     MD_Rfunction& r,double*** rsum) {
-    register int ix,iy,iz;
+    int ix,iy,iz;
     const double piterm=5.5683279968317079;
     double p[3];
     double pc[3];

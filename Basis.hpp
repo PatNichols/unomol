@@ -22,7 +22,7 @@ class Shell {
     Shell():npr(0),lsh(0),cen(0),al(0),co(0) {};
     Shell(const Shell& rs):npr(rs.npr),lsh(rs.lsh),cen(rs.cen),
         al(new double[npr]),co(new double[npr]) {
-        for (register int i=0; i<npr; ++i) {
+        for (int i=0; i<npr; ++i) {
             al[i]=rs.al[i];
             co[i]=rs.co[i];
         }
@@ -76,7 +76,7 @@ class Shell {
     friend std::ostream& operator << ( std::ostream& os,
                                        const Shell& sh) {
         os<<std::setw(3)<<sh.npr<<sh.lsh<<sh.cen<<endl;
-        for (register int i=0; i<sh.npr; ++i) {
+        for (int i=0; i<sh.npr; ++i) {
             os.setf(std::ios::showpoint);
             os<< std::setw(20) << std::setprecision(10)
               << sh.al[i] << " " << sh.co[i]<<endl;
