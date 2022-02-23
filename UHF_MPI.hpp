@@ -22,7 +22,7 @@ class UnRestrictedHartreeFockMPI {
     UnRestrictedHartreeFockMPI() = delete;
 
     explicit UnRestrictedHartreeFockMPI(Basis* b,
-                                        const TwoElectronInts* t):basis(*b),tints(*t) {
+                                        TwoElectronInts* t):basis(*b),tints(*t) {
         MPI_Comm_rank(MPI_COMM_WORLD,&rank);
         nshell=basis.number_of_shells();
         no=basis.number_of_orbitals();
@@ -105,7 +105,7 @@ class UnRestrictedHartreeFockMPI {
     }
 
     void update() {
-        register int i;
+        int i;
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Bcast(PmatA,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
         MPI_Bcast(PmatB,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -146,12 +146,11 @@ class UnRestrictedHartreeFockMPI {
         ++iteration;
     }
 
-    void dpm_update(const TwoElectronInts& xints) {
-        register int i;
+    void dpm_update(TwoElectronInts& xints) {
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Bcast(PmatA,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
         MPI_Bcast(PmatB,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
-        for (i=0; i<no2; ++i) {
+        for (int i=0; i<no2; ++i) {
             GbufA[i]=0.0;
             GbufB[i]=0.0;
         }
@@ -170,7 +169,7 @@ class UnRestrictedHartreeFockMPI {
                     SymmPack::TraceSymmPackProduct(PmatB,GmatB,no));
         ediff=energy-eold;
         eold=energy;
-        for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+GmatA[i];
+        for (int i=0; i<no2; ++i) Fock[i]=Hmat[i]+GmatA[i];
         SymmPack::sp_trans(no,Fock,Xmat,Wrka);
         SymmPack::rsp(no,Fock,Wmat,EvalsA,Wrka);
         formCmatrix(CmatA);
@@ -178,7 +177,7 @@ class UnRestrictedHartreeFockMPI {
         memcpy(PoldA,PmatA,sizeof(double)*no2);
         formPmatrix(PmatA,CmatA,noccA);
         pdiff=SymmPack::SymmPackDiffNorm(PmatA,PoldA,no);
-        for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+GmatB[i];
+        for (int i=0; i<no2; ++i) Fock[i]=Hmat[i]+GmatB[i];
         SymmPack::sp_trans(no,Fock,Xmat,Wrka);
         SymmPack::rsp(no,Fock,Wmat,EvalsB,Wrka);
         formCmatrix(CmatB);
@@ -225,9 +224,9 @@ class UnRestrictedHartreeFockMPI {
         }
         if (rank) return;
         memcpy(PmatGsA,PmatA,sizeof(double)*no2);
-        for (register int j=no2; j<tno2; ++j) PmatGsA[j]=0.0;
+        for (int j=no2; j<tno2; ++j) PmatGsA[j]=0.0;
         memcpy(PmatGsB,PmatB,sizeof(double)*no2);
-        for (register int j=no2; j<tno2; ++j) PmatGsB[j]=0.0;
+        for (int j=no2; j<tno2; ++j) PmatGsB[j]=0.0;
         energyGs=energy+nucrep;
         FILE* fp=create_file("PMATRIX.DAT");
         fwrite(PmatA,sizeof(double),no2,fp);
@@ -238,33 +237,33 @@ class UnRestrictedHartreeFockMPI {
 
     void formCmatrix(double* c) {
         copy_trans(no,Wmat);
-        for (register int i=0; i<no; ++i) {
+        for (int i=0; i<no; ++i) {
             const double *Xi=Xmat+i*no;
-            for (register int j=0; j<no; ++j) {
+            for (int j=0; j<no; ++j) {
                 const double *xp=Xi;
                 const double *wp=Wmat+j*no;
-                register double sum=0.0;
-                for (register int k=0; k<no; ++k) sum+=xp[k]*wp[k];
+                double sum=0.0;
+                for (int k=0; k<no; ++k) sum+=xp[k]*wp[k];
                 (*(c+i*no+j))=sum;
             }
         }
     }
 
     void formPmatrix(double* p,double *c,int noc) {
-        register int ij=0;
-        for (register int i=0; i<no; ++i) {
+        int ij=0;
+        for (int i=0; i<no; ++i) {
             const double *ci=c+i*no;
-            for (register int j=0; j<=i; ++j,++ij) {
+            for (int j=0; j<=i; ++j,++ij) {
                 const double *cj=c+j*no;
-                register double sum=0.0;
-                for (register int k=0; k<noc; ++k) sum+=ci[k]*cj[k];
+                double sum=0.0;
+                for (int k=0; k<noc; ++k) sum+=ci[k]*cj[k];
                 p[ij]=sum;
             }
         }
     }
 
     void PmatrixGuess() {
-        for (register int i=0; i<no2; ++i) Fock[i]=Hmat[i];
+        for (int i=0; i<no2; ++i) Fock[i]=Hmat[i];
         SymmPack::sp_trans(no,Fock,Xmat,Wrka);
         SymmPack::rsp(no,Fock,Wmat,EvalsA,Wrka);
         formCmatrix(CmatA);
@@ -343,14 +342,14 @@ class UnRestrictedHartreeFockMPI {
 
     double nuclear_repulsion_energy(int ncen,
                                     const Center* center) {
-        register double sum=0.0;
+        double sum=0.0;
         double q1,q2,r12;
         const double *r1,*r2;
 
-        for (register int i=0; i<ncen; ++i) {
+        for (int i=0; i<ncen; ++i) {
             q1=(center+i)->charge();
             r1=(center+i)->r_vec();
-            for (register int j=i+1; j<ncen; ++j) {
+            for (int j=i+1; j<ncen; ++j) {
                 q2=(center+j)->charge();
                 r2=(center+j)->r_vec();
                 r12=sqrt(dist_sqr(r1,r2));
@@ -641,7 +640,7 @@ class UnRestrictedHartreeFockMPI {
 
     void
     scf_converger() {
-        register int i;
+        int i;
         double p00,p11,p01,beta;
         if (scf_accel==1) {
             if (extrap) {
@@ -694,7 +693,7 @@ class UnRestrictedHartreeFockMPI {
             }
             return;
         } else {
-            for (register int i=0; i<no2; ++i) {
+            for (int i=0; i<no2; ++i) {
                 PmatA[i]=(PmatA[i]+PoldA[i])*0.5;
                 PmatB[i]=(PmatB[i]+PoldB[i])*0.5;
             }
@@ -841,7 +840,7 @@ class UnRestrictedHartreeFockMPI {
 
   private:
     Basis& basis;
-    const TwoElectronInts& tints;
+    TwoElectronInts& tints;
     double eps,ediff,pdiff,eold,nucrep,energy;
     double energyGs;
     double *PmatGsA;

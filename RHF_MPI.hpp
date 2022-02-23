@@ -25,7 +25,7 @@ class RestrictedHartreeFockMPI {
 
 
     RestrictedHartreeFockMPI(Basis* b,
-                             const TwoElectronInts* t):basis(*b),tints(*t) {
+                             TwoElectronInts* t):basis(*b),tints(*t) {
         MPI_Comm_size(MPI_COMM_WORLD,&psize);
         MPI_Comm_rank(MPI_COMM_WORLD,&rank);
         nshell=basis.number_of_shells();
@@ -94,7 +94,7 @@ class RestrictedHartreeFockMPI {
     }
 
     void update() {
-        register int i;
+        int i;
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Bcast(Pmat,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
         for (i=0; i<no2; ++i) Gbuf[i]=0.0;
@@ -120,8 +120,8 @@ class RestrictedHartreeFockMPI {
         ++iteration;
     }
 
-    void dpm_update(const TwoElectronInts& xints) {
-        register int i;
+    void dpm_update(TwoElectronInts& xints) {
+        int i;
         MPI_Barrier(MPI_COMM_WORLD);
         MPI_Bcast(Pmat,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
         for (i=0; i<no2; ++i) Gbuf[i]=0.0;
@@ -189,7 +189,7 @@ class RestrictedHartreeFockMPI {
         }
         if (rank) return;
         memcpy(PmatGs,Pmat,sizeof(double)*no2);
-        for (register int j=no2; j<tno2; ++j) PmatGs[j]=0.0;
+        for (int j=no2; j<tno2; ++j) PmatGs[j]=0.0;
         energyGs=energy+nucrep;
         FILE *fp=create_file("PMATRIX.DAT");
         fwrite(Pmat,sizeof(double),no2,fp);
@@ -199,33 +199,33 @@ class RestrictedHartreeFockMPI {
 
     void formCmatrix(double* c) {
         copy_trans(no,Wmat);
-        for (register int i=0; i<no; ++i) {
+        for (int i=0; i<no; ++i) {
             const double *Xi=Xmat+i*no;
-            for (register int j=0; j<no; ++j) {
+            for (int j=0; j<no; ++j) {
                 const double *xp=Xi;
                 const double *wp=Wmat+j*no;
-                register double sum=0.0;
-                for (register int k=0; k<no; ++k) sum+=xp[k]*wp[k];
+                double sum=0.0;
+                for (int k=0; k<no; ++k) sum+=xp[k]*wp[k];
                 (*(c+i*no+j))=sum;
             }
         }
     }
 
     void formPmatrix(double* p,double *c,int noc) {
-        register int ij=0;
-        for (register int i=0; i<no; ++i) {
+        int ij=0;
+        for (int i=0; i<no; ++i) {
             const double *ci=c+i*no;
-            for (register int j=0; j<=i; ++j,++ij) {
+            for (int j=0; j<=i; ++j,++ij) {
                 const double *cj=c+j*no;
-                register double sum=0.0;
-                for (register int k=0; k<noc; ++k) sum+=ci[k]*cj[k];
+                double sum=0.0;
+                for (int k=0; k<noc; ++k) sum+=ci[k]*cj[k];
                 p[ij]=sum;
             }
         }
     }
 
     void PmatrixGuess() {
-        for (register int i=0; i<no2; ++i) Fock[i]=Hmat[i];
+        for (int i=0; i<no2; ++i) Fock[i]=Hmat[i];
         SymmPack::sp_trans(no,Fock,Xmat,Wrka);
         SymmPack::rsp(no,Fock,Wmat,Evals,Wrka);
         formCmatrix(Cmat);
@@ -300,14 +300,14 @@ class RestrictedHartreeFockMPI {
 
     double nuclear_repulsion_energy(int ncen,
                                     const Center* center) {
-        register double sum=0.0;
+        double sum=0.0;
         double q1,q2,r12;
         const double *r1,*r2;
 
-        for (register int i=0; i<ncen; ++i) {
+        for (int i=0; i<ncen; ++i) {
             q1=(center+i)->charge();
             r1=(center+i)->r_vec();
-            for (register int j=i+1; j<ncen; ++j) {
+            for (int j=i+1; j<ncen; ++j) {
                 q2=(center+j)->charge();
                 r2=(center+j)->r_vec();
                 r12=sqrt(dist_sqr(r1,r2));
@@ -573,7 +573,7 @@ class RestrictedHartreeFockMPI {
 
     void
     scf_converger() {
-        register int i;
+        int i;
         double p00,p11,p01,beta;
         if (scf_accel==1) {
             if (extrap) {
@@ -604,7 +604,7 @@ class RestrictedHartreeFockMPI {
             }
             return;
         } else {
-            for (register int i=0; i<no2; ++i)
+            for (int i=0; i<no2; ++i)
                 Pmat[i]=(Pmat[i]+Pold[i])*0.5;
             return;
         }
@@ -704,7 +704,7 @@ class RestrictedHartreeFockMPI {
 
   private:
     Basis& basis;
-    const TwoElectronInts& tints;
+    TwoElectronInts& tints;
     double eps,ediff,pdiff,eold,nucrep,energy;
     double energyGs;
     double *PmatGs;
