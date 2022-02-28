@@ -13,6 +13,9 @@
 
 namespace putils {
 
+#define DEF_CACHE_SIZE 1048576LL * 32LL
+#define DEF_MAX_FSZ 1048576LL * 512LL
+
 class FileCache
 {
 public:
@@ -20,8 +23,8 @@ public:
 
     FileCache() {
         prefix = "./tmp/tmp.";
-        cache_size = 1048576LL * 32LL;
-        max_file_size = 1048576LL * 512LL;
+        cache_size = DEF_CACHE_SIZE;
+        max_file_size = DEF_MAX_FSZ;
         fp = nullptr;
         curr_pos = 0;
         curr_file = 0;
@@ -43,8 +46,8 @@ public:
 
     explicit FileCache(const std::string& dir_str,const std::string& name_str) {
         prefix = dir_str + std::string("/") + name_str + std::string(".");
-        cache_size = 1048576LL * 32LL;
-        max_file_size = 1048576LL * 512LL;
+        cache_size = DEF_CACHE_SIZE;
+        max_file_size = DEF_MAX_FSZ;
         fp = nullptr;
         curr_pos = 0;
         curr_file = 0;

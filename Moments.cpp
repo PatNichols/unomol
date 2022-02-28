@@ -168,7 +168,7 @@ void MomentInts (const Basis & basis ) {
             if (!knt)
                 continue;
             calc_moments (mvals, sp, aux, dx, dy, dz);
-            fwrite(mvals,sizeof(MomInts),knt,rout);
+            Fwrite(mvals,sizeof(MomInts),knt,rout);
             for (int ils = 0; ils < sp.len; ++ils) {
                 double fact = factors[ils];
                 (((mvals + ils)->dx)) *= fact;
@@ -180,7 +180,7 @@ void MomentInts (const Basis & basis ) {
                 ((mvals + ils)->qyy) *= fact;
                 ((mvals + ils)->qyz) *= fact;
                 ((mvals + ils)->qzz) *= fact;
-                fwrite((mvals+ils),sizeof(MomInts),1,out);
+                Fwrite((mvals+ils),sizeof(MomInts),1,out);
             }
         }
     }
@@ -232,7 +232,7 @@ void AnalyzeMoments (const double *Pmat, const Center * center, int ncen, int no
         fatal_error("could not open MOMINTS.DAT for reading");
     }
     for (int i = 0; i < no2; ++i) {
-        fread(&mint,sizeof(MomInts),1,in);
+        Fread(&mint,sizeof(MomInts),1,in);
         double pij = Pmat[mint.ijr];
         eM.dx += pij * (mint.dx);
         eM.dy += pij * (mint.dy);
@@ -320,7 +320,7 @@ void AnalyzeMoments (const double *PmatA, const double* PmatB,
         fatal_error("could not open MOMINTS.DAT for reading");
     }
     for (int i = 0; i < no2; ++i) {
-        fread(&mint,sizeof(MomInts),1,in);
+        Fread(&mint,sizeof(MomInts),1,in);
         int ijr=mint.ijr;
         double pij = 0.5*(PmatA[ijr]+PmatB[ijr]);
         eM.dx += pij * (mint.dx);
@@ -380,7 +380,7 @@ void AnalyzeMOMoments (double *Cmat,int no2, int norb) {
         dx[i]=dy[i]=dz[i]=0.0;
     }
     for (int i = 0; i < no2; ++i) {
-        fread(&mint,sizeof(MomInts),1,in);
+        Fread(&mint,sizeof(MomInts),1,in);
         int ijr=mint.ijr;
         dx[ijr] = mint.dx;
         dy[ijr] = mint.dy;
@@ -422,7 +422,7 @@ AnalyzeMOMoments (double *CmatA,double *CmatB,int no2, int norb) {
         dx[i]=dy[i]=dz[i]=0.0;
     }
     for (int i = 0; i < no2; ++i) {
-        fread(&mint,sizeof(MomInts),1,in);
+        Fread(&mint,sizeof(MomInts),1,in);
         int ijr=mint.ijr;
         dx[ijr] = mint.dx;
         dy[ijr] = mint.dy;
@@ -448,7 +448,7 @@ AnalyzeMOMoments (double *CmatA,double *CmatB,int no2, int norb) {
         dx[i]=dy[i]=dz[i]=0.0;
     }
     for (int i = 0; i < no2; ++i) {
-        fread(&mint,sizeof(MomInts),1,in);
+        Fread(&mint,sizeof(MomInts),1,in);
         int ijr=mint.ijr;
         dx[ijr] = mint.dx;
         dy[ijr] = mint.dy;

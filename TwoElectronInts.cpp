@@ -441,7 +441,7 @@ TwoElectronInts::calculate(const Basis& basis) {
 
 void
 TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
-    constexpr const int BINSIZE=1024;
+    constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 
     cache.open_for_reading();
@@ -558,7 +558,7 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
 void
 TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
                              double *GmatA,double *GmatB) {
-    constexpr const int BINSIZE=1024;
+    constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 
     cache.open_for_reading();

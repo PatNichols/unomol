@@ -51,7 +51,7 @@ class Rys {
     Rys(int maxlv = 2) {
         int maxl = (maxlv > 2) ? maxlv : 2;
         maxr = 2*maxl + 1;
-        std::cerr << " maxroots = " << maxr << "\n";
+        std::cerr << " Rys maxroots = " << maxr << "\n";
         Gx = allocate_d3(maxr,maxr,maxr);
         Gy = allocate_d3(maxr,maxr,maxr);
         Gz = allocate_d3(maxr,maxr,maxr);

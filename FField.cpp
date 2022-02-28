@@ -10,7 +10,7 @@ void FiniteFieldMatrix( const Basis& basis, double *Ham,
     MomInts mint;
     FILE *infile=open_file("RMOM.DAT");
     for (int i=0; i<no2; ++i) {
-        fread(&mint,sizeof(MomInts),1,infile);
+        Fread(&mint,sizeof(MomInts),1,infile);
         int ijr=mint.ijr;
         Ham[ijr] -= (Efield[0]*mint.dx+
                      Efield[1]*mint.dy+

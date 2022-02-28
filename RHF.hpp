@@ -128,7 +128,7 @@ class RestrictedHartreeFock {
         formXmatrix();
         if (basis.scf_flags(2)) {
             FILE* in=open_file("PMATRIX.DAT");
-            fread(Pmat,sizeof(double),no2,in);
+            Fread(Pmat,sizeof(double),no2,in);
             fclose(in);
         } else {
             PmatrixGuess();
@@ -179,7 +179,7 @@ class RestrictedHartreeFock {
         for (int j=no2; j<tno2; ++j) PmatGs[j]=0.0;
         energyGs=energy+nucrep;
         FILE *fp=create_file("PMATRIX.DAT");
-        fwrite(Pmat,sizeof(double),no2,fp);
+        Fwrite(Pmat,sizeof(double),no2,fp);
         fclose(fp);
         final_output(init_energy);
     }
@@ -313,7 +313,7 @@ class RestrictedHartreeFock {
         ////////////////////////////////////////////////////////
         // start calculation
         FILE* in=open_file("pos.grid.dat");
-        fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
+        int e = fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
         basis.SetCenterPosition(px,py,pz,pcen);
         nucrep=nuclear_repulsion_energy(ncen,
                                         basis.center_ptr());
@@ -348,7 +348,7 @@ class RestrictedHartreeFock {
                 0,energyGs,init_energy,final_energy,vstat,ediff);
         fflush(sout);
         for (int i=1; i<npts; ++i) {
-            fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
+            int e = fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
             basis.SetCenterPosition(px,py,pz,pcen);
             nucrep=nuclear_repulsion_energy(basis.number_of_centers(),
                                             basis.center_ptr());

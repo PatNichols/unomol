@@ -14,6 +14,7 @@
 #include "OneElectronInts.hpp"
 #include "SymmPack.hpp"
 #include "FField.hpp"
+#include "putils_c.h"
 using namespace std;
 
 namespace unomol {
@@ -157,7 +158,7 @@ class RestrictedHartreeFockMPI {
             formXmatrix();
             if (basis.scf_flags(2)) {
                 FILE* in=open_file("PMATRIX.DAT");
-                fread(Pmat,sizeof(double),no2,in);
+                Fread(Pmat,sizeof(double),no2,in);
                 fclose(in);
             } else {
                 PmatrixGuess();
@@ -192,7 +193,7 @@ class RestrictedHartreeFockMPI {
         for (int j=no2; j<tno2; ++j) PmatGs[j]=0.0;
         energyGs=energy+nucrep;
         FILE *fp=create_file("PMATRIX.DAT");
-        fwrite(Pmat,sizeof(double),no2,fp);
+        Fwrite(Pmat,sizeof(double),no2,fp);
         fclose(fp);
         final_output(init_energy);
     }

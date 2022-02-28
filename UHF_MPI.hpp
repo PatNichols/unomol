@@ -13,6 +13,7 @@
 #include "OneElectronInts.hpp"
 #include "SymmPack.hpp"
 #include "FField.hpp"
+#include "putils_c.h"
 using namespace std;
 
 namespace unomol {
@@ -197,8 +198,8 @@ class UnRestrictedHartreeFockMPI {
             formXmatrix();
             if (basis.scf_flags(2)) {
                 FILE* in=open_file("PMATRIX.DAT");
-                fread(PmatA,sizeof(double),no2,in);
-                fread(PmatB,sizeof(double),no2,in);
+                Fread(PmatA,sizeof(double),no2,in);
+                Fread(PmatB,sizeof(double),no2,in);
                 fclose(in);
             } else {
                 PmatrixGuess();
@@ -229,8 +230,8 @@ class UnRestrictedHartreeFockMPI {
         for (int j=no2; j<tno2; ++j) PmatGsB[j]=0.0;
         energyGs=energy+nucrep;
         FILE* fp=create_file("PMATRIX.DAT");
-        fwrite(PmatA,sizeof(double),no2,fp);
-        fwrite(PmatB,sizeof(double),no2,fp);
+        Fwrite(PmatA,sizeof(double),no2,fp);
+        Fwrite(PmatB,sizeof(double),no2,fp);
         fclose(fp);
         final_output(init_energy);
     }
@@ -374,7 +375,7 @@ class UnRestrictedHartreeFockMPI {
         ////////////////////////////////////////////////////////
         // start calculation
         FILE* in=open_file("pos.grid.dat");
-        fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
+        int e = fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
         basis.SetCenterPosition(px,py,pz,pcen);
         TwoElectronInts xints(basis,sshell,xstr);
         if (!rank) {
@@ -419,7 +420,7 @@ class UnRestrictedHartreeFockMPI {
             fflush(sout);
         }
         for (int i=1; i<npts; ++i) {
-            fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
+            int e = fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
             basis.SetCenterPosition(px,py,pz,pcen);
             xints.recalculate(basis);
             if (!rank) {

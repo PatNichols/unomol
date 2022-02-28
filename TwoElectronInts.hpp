@@ -14,7 +14,6 @@
 #include "FileCache.hpp"
 #include "MD_Dfunction.hpp"
 #include "MD_Rfunction.hpp"
-
 #define MAXFILESIZE 1073741824UL
 
 namespace unomol {

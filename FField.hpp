@@ -9,6 +9,7 @@
 #include "MD_Rfunction.hpp"
 #include "Util.hpp"
 #include "Structs.hpp"
+#include "putils_c.h"
 using namespace std;
 
 namespace unomol {
