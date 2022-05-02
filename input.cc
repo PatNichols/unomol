@@ -9,7 +9,7 @@
 #include <cctype>
 #include <climits>
 #include <float.h>
-#define NATOM 17
+#define NATOM 18
 #define NSCREEN 20
 #define MAXCEN 99
 #define MAXITS 999
@@ -7072,7 +7072,7 @@ int main() {
         ++sptr;
     }
     fclose(out);
-    if (int_flag[0]==1) make_posin(ncen);
+//    if (int_flag[0]==1) make_posin(ncen);
     cout<<"All done"<<endl;
     cout<<"So long and thanks for all the fish"<<endl;
     return 0;

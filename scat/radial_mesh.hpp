@@ -33,7 +33,6 @@ public:
             for (std::size_t j=0;j<ns;++j) {
                 double r = rs + j * dr;
                 rpts.push_back(r);
-                ++knt; 
             }
         }	
         rpts.push_back(rst[nreg]);
