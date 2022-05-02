@@ -158,7 +158,7 @@ class Basis {
     double eps,ffield;
     double *trans;
     int nshell,ncen,norb,maxl,nelec,maxits;
-    int tnshell,tncen,tnorb,skipcen,tnelec,dpmgrid;
+    int tnshell,tncen,tnorb,skipcen,tnelec;
     int scf_flag[3];
     int int_flag[3];
     int prt_flag[4];
@@ -220,7 +220,6 @@ class Basis {
                 ain>>shells[i];
                 (shells+i)->setCenter(ncen);
             }
-            ain>>dpmgrid;
             ain.close();
         }
         for (int i=0; i<tnshell; i++) (shells+i)->normalize();
@@ -299,9 +298,6 @@ class Basis {
     }
     constexpr void SetCenterPosition(double x,double y,double z,int n) noexcept {
         (centers+n)->setPosition(x,y,z);
-    }
-    constexpr int number_of_dpm_points() {
-        return dpmgrid;
     }
     constexpr double FiniteFieldValue() const noexcept {
         return ffield;

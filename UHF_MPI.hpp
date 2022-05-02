@@ -4,6 +4,9 @@
 #include <cstdlib>
 #include <cmath>
 #include <mpi.h>
+#include <iostream>
+#include <fstream>
+
 #include "Util.hpp"
 #include "Basis.hpp"
 #include "TwoElectronInts.hpp"
@@ -369,13 +372,16 @@ class UnRestrictedHartreeFockMPI {
         no2=tno2;
         ncen=tncen;
         int pcen=basis.skip_center();
-        int npts=basis.number_of_dpm_points();
+        int npts;
         basis.dpm_augment();
         eps=1.e-12;
         ////////////////////////////////////////////////////////
         // start calculation
-        FILE* in=open_file("pos.grid.dat");
-        int e = fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
+        std::ifstream in("pos.grid.dat");
+        in >> npts;
+        in >> px;
+        in >> py;
+        in >> pz;
         basis.SetCenterPosition(px,py,pz,pcen);
         TwoElectronInts xints(basis,sshell,xstr);
         if (!rank) {
@@ -420,7 +426,9 @@ class UnRestrictedHartreeFockMPI {
             fflush(sout);
         }
         for (int i=1; i<npts; ++i) {
-            int e = fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
+            in >> px;
+            in >> py;
+            in >> pz;
             basis.SetCenterPosition(px,py,pz,pcen);
             xints.recalculate(basis);
             if (!rank) {
@@ -460,6 +468,7 @@ class UnRestrictedHartreeFockMPI {
                     i,energyGs,init_energy,final_energy,vstat,ediff);
             fflush(sout);
         }
+        in.close();
         if (rank) return;
         fclose(vout);
         fclose(sout);

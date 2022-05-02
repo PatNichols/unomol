@@ -1,4 +1,4 @@
-CFLAGS=-g -Ofast -fPIC -ffast-math -mtune=native -mavx 
+CFLAGS=-g -Ofast -fPIC -ffast-math -mtune=native -mavx --std=c99
 CXXFLAGS=-g -Ofast -fPIC -ffast-math -mtune=native --std=c++17 -mavx 
 
 SER_FILES= putils_c.o Util.o SymmPack.o Rys.o Moments.o OneElectronInts.o FField.o TwoElectronInts.o GDPMInts.o Unomol.o

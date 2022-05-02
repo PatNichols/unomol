@@ -33,7 +33,7 @@ inline void bad_response() {
 template <typename T>
 inline T** alloc_matrix(size_t nr,size_t nc) {
     T** m=new T*[nr];
-    for (register int i=0; i<nr; i++) m[i]=new T[nc];
+    for (int i=0; i<nr; i++) m[i]=new T[nc];
     return m;
 }
 
@@ -55,7 +55,7 @@ inline bool get_uint(istream& is,unsigned int& x) {
     buffer[11]='\0';
     clear_stream(cin);
     char ch=buffer[0];
-    register int i=0;
+    int i=0;
     while (ch!='\0') {
         if (!isdigit(ch)) return false;
         ch=buffer[++i];
@@ -71,7 +71,7 @@ inline bool get_int(istream& is,int& x) {
     buffer[12]='\0';
     clear_stream(cin);
     char ch=buffer[0];
-    register int i=0;
+    int i=0;
     if (ch=='+' || ch=='-') ch=buffer[++i];
     while (ch!='\0') {
         if (!isdigit(ch)) return false;
@@ -88,7 +88,7 @@ inline bool get_double(istream& is,double& x) {
     buffer[71]='\0';
     clear_stream(cin);
     char ch=buffer[0];
-    register int i=0;
+    int i=0;
     if (ch=='+' || ch=='-') ch=buffer[++i];
     while (ch!='\0' && ch!='.' && ch!='E' && ch!='e') {
         if (!isdigit(ch)) return false;

@@ -3,6 +3,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <iostream>
+#include <fstream>
+
 #include "Util.hpp"
 #include "Basis.hpp"
 #include "TwoElectronInts.hpp"
@@ -321,13 +324,16 @@ class UnRestrictedHartreeFock {
         no2=tno2;
         ncen=tncen;
         int pcen=basis.skip_center();
-        int npts=basis.number_of_dpm_points();
+        int npts;
         basis.dpm_augment();
         eps=1.e-12;
         ////////////////////////////////////////////////////////
         // start calculation
-        FILE* in=open_file("pos.grid.dat");
-        int e = fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
+        std::ifstream in("pos.grid.dat");
+        in >> npts;
+        in >> px;
+        in >> py;
+        in >> pz;
         basis.SetCenterPosition(px,py,pz,pcen);
         nucrep=nuclear_repulsion_energy(ncen,
                                         basis.center_ptr());
@@ -362,7 +368,9 @@ class UnRestrictedHartreeFock {
                 0,energyGs,init_energy,final_energy,vstat,ediff);
         fflush(sout);
         for (int i=1; i<npts; ++i) {
-            int e = fscanf(in,"%15lf%15lf%15lf",&px,&py,&pz);
+            in >> px;
+            in >> py;
+            in >> pz;
             basis.SetCenterPosition(px,py,pz,pcen);
             nucrep=nuclear_repulsion_energy(basis.number_of_centers(),
                                             basis.center_ptr());
@@ -396,6 +404,7 @@ class UnRestrictedHartreeFock {
         }
         fclose(vout);
         fclose(sout);
+        in.close();
     }
 
     bool is_converged() const noexcept {
