@@ -418,7 +418,7 @@ class UnRestrictedHartreeFockMPI {
             double alfa= -2.0*vpol*r2*r2;
             vout = create_file("vpol.out");
             sout = create_file("spol.out");
-            fprintf(vout,"%15.10lf%15.10lf%15.10lf %25.15le %25.15le\n",px,py,pz,
+            fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le\n",px,py,pz,
                     vpol,alfa);
             fflush(vout);
             fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
@@ -461,7 +461,7 @@ class UnRestrictedHartreeFockMPI {
             double vstat=init_energy-energyGs;
             double r2=px*px+py*py+pz*pz;
             double alfa= -2.0*vpol*(r2*r2);
-            fprintf(vout,"%15.10lf%15.10lf%15.10lf %25.15le %25.15le\n",px,py,pz,
+            fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le\n",px,py,pz,
                     vpol,alfa);
             fflush(vout);
             fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
