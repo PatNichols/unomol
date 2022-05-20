@@ -63,7 +63,7 @@ extern "C" {
         exit(EXIT_FAILURE);
     }
 
-    ssize_t Write(int fd,const void *buff,size_t sz)
+    void Write(int fd,const void *buff,size_t sz)
     {
         size_t e = 0;
         ssize_t c = 0;
@@ -71,7 +71,7 @@ extern "C" {
         const void * bp = buff;
         if (sz==0) {
             fprintf(stderr,"size = 0 in write!\n");
-            return 0;
+            return;
         }
         while (1) {
             c = write(fd,bp,rem);
@@ -83,26 +83,26 @@ extern "C" {
             if (rem==0) break;
             bp += c;
         }
-        return (ssize_t)sz;
+        return;
     }
 
-    ssize_t Read(int fd,void *buff,size_t sz)
+    void Read(int fd,void *buff,size_t sz)
     {
         ssize_t c = 0;
         if (sz==0) {
             fprintf(stderr,"warning size = 0 in read!\n");
-            return 0;
+            return;
         }
         c = read(fd,buff,sz);
         if (c < sz) {
             fprintf(stderr,"read failed %s\n",strerror(errno));
             exit(EXIT_FAILURE);
         }
-        return (ssize_t)c;
+        return;
     }
 
 
-    ssize_t BlockingWrite(int fd,const void *buff,size_t sz)
+    void BlockingWrite(int fd,const void *buff,size_t sz)
     {
         ssize_t e = 0;
         ssize_t c = 0;
@@ -111,10 +111,10 @@ extern "C" {
         const void * bp = buff;
         if (sz==0) {
             fprintf(stderr,"sz = 0 in write!\n");
-            return 0;
+            return;
         }
         while (1) {
-            c = Write(fd,bp,rem);
+            c = write(fd,bp,rem);
             if (c < 0) {
                 fprintf(stderr,"block write failed %s\n",strerror(errno));
                 exit(EXIT_FAILURE);
@@ -123,10 +123,10 @@ extern "C" {
             if (rem==0) break;
             bp += c;
         }
-        return (ssize_t)sz;
+        return;
     }
 
-    ssize_t BlockingRead(int fd,void *buff,size_t sz)
+    void BlockingRead(int fd,void *buff,size_t sz)
     {
         struct timespec tdurr;
         struct timespec twait;
@@ -137,7 +137,7 @@ extern "C" {
         void * bp = buff;
         if (sz==0) {
             fprintf(stderr,"size = 0 in read!\n");
-            return 0;
+            return;
         }
         while (1) {
             ssize_t c = read(fd,bp,rem);
@@ -151,7 +151,7 @@ extern "C" {
                 tdurr.tv_nsec = 100000;
                 int e = nanosleep(&twait,&tdurr);
                 if (e < 0) {
-                    if (errno == EINTR) return 0;
+                    if (errno == EINTR) return;
                     fprintf(stderr,"error in nanosleep %s \n",strerror(errno));
                     exit(EXIT_FAILURE);
                 }
@@ -162,23 +162,23 @@ extern "C" {
                 bp += c;
             }
         }
-        return (ssize_t)sz;
+        return;
     }
 
 
-    size_t Fwrite(const void *p,size_t osize,size_t cnt,FILE *fp)
+    void Fwrite(const void *p,size_t osize,size_t cnt,FILE *fp)
     {
         int64_t e = fwrite(p,osize,cnt,fp);
-        if (e==cnt) return e;
+        if (e==cnt) return;
         e = ferror(fp);
-        fprintf(stderr,"Fwite failed ferror = %s\n",strerror(e));
+        fprintf(stderr,"Fwrite failed ferror = %s\n",strerror(e));
         exit(EXIT_FAILURE);
     }
 
-    size_t Fread(void *p,size_t osize,size_t cnt,FILE *fp)
+    void Fread(void *p,size_t osize,size_t cnt,FILE *fp)
     {
         int64_t e = fread(p,osize,cnt,fp);
-        if (e==cnt) return e;
+        if (e==cnt) return;
         e = ferror(fp);
         fprintf(stderr,"Fread failed ferror = %s\n",strerror(e));
         exit(EXIT_FAILURE);
@@ -188,7 +188,7 @@ extern "C" {
      *  This loops waiting for the required size to output to file
      *  note::: this can be dangerous!
      ***/
-    size_t BlockingFread(void *buff,size_t osize,size_t cnt,FILE *fp)
+    void BlockingFread(void *buff,size_t osize,size_t cnt,FILE *fp)
     {
         struct timespec tdurr;
         struct timespec twait;
@@ -203,13 +203,13 @@ extern "C" {
         void * bp = buff;
         if (cnt==0) {
             fprintf(stderr,"WARNING : cnt = 0 in Fread!\n");
-            return 0;
+            return;
         }
         while (1) {
             if (feof(fp)) {
                 e = nanosleep(&twait,&tdurr);
             }
-            c = Fread(bp,osize,rem,fp);
+            c = fread(bp,osize,rem,fp);
             if (c!=rem) {
                 tdurr.tv_nsec = 0;
                 e = nanosleep(&twait,&tdurr);
@@ -219,7 +219,7 @@ extern "C" {
                 bp += c;
             }
         }
-        return cnt;
+        return;
     }
 
 

@@ -29,37 +29,7 @@ FILE* create_file(const char* name) {
 void make_filename(int fileno,int rank,const char* base,
                    char* filename) {
     char prefix[12];
-    char to_text[]= { '0','1','2','3','4','5','6','7','8','9' };
-#ifdef _USE_TMP_
-    const char tmpdir[]="/tmp/";
-    int tmpsize=6;
-#elif defined _USE_SCRATCH_
-    const char tmpdir[]="/scratch/";
-    int tmpsize=10;
-#else
-    const char tmpdir[]="./";
-    int tmpsize=3;
-#endif
-    size_t baselen = strlen(base) + 1;
-    if (fileno>9999) {
-        fatal_error("filenumber>9999 in make_filename\n");
-    }
-    if (rank>99) {
-        fatal_error("rank>99 in make_filename\n");
-    }
-    strncpy(filename,tmpdir,tmpsize);
-    prefix[0]=to_text[fileno/1000];
-    prefix[1]=to_text[fileno/100%10];
-    prefix[2]=to_text[fileno/10%10];
-    prefix[3]=to_text[fileno%10];
-    prefix[4]='_';
-    prefix[5]=to_text[rank/100];
-    prefix[6]=to_text[rank/10%10];
-    prefix[7]=to_text[rank%10];
-    prefix[8]='_';
-    prefix[9]='\0';
-    strncat(filename,prefix,10);
-    strncat(filename,base,baselen);
+    sprintf(filename,"%04d_%03d_%s",fileno,rank,base);
 }
 
 void

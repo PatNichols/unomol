@@ -6,12 +6,12 @@
 #include <vector>
 #include <string>
 #include <cstring>
-#include "pconfig.h"
+//#include "pconfig.h"
 #include "Util.hpp"
 #include "Basis.hpp"
 #include "Rys.hpp"
 #include "Stopwatch.hpp"
-#include "FileCache.hpp"
+#include "cache.hpp"
 #include "MD_Dfunction.hpp"
 #include "MD_Rfunction.hpp"
 #define MAXFILESIZE 1073741824UL
@@ -76,7 +76,7 @@ class TwoElectronInts {
 
     TwoElectronInts(const Basis& basis,
                                  int start_shell,const string& base_str):
-        start(start_shell),rank(0),psize(1),cache(std::string("./"),std::string(base_str+"_0_"))
+        start(start_shell),rank(0),psize(1),cache(base_str,32L*1048576L)
     {
         calculate(basis);
     }
@@ -97,7 +97,7 @@ class TwoElectronInts {
   private:
     int start;
     int rank,psize;
-    putils::FileCache cache;
+    putils::Cache cache;
 };
 
 

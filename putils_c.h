@@ -26,20 +26,27 @@ void * Calloc(size_t n);
 int Open(const char *name,int flgs);
 
 FILE * Fdopen(int fdes,const char *mode);
+
 FILE * Fopen(const char *name,const char *mode);
+
 FILE * Fmemopen(char *b,size_t bsize,const char *mode);
 
-ssize_t Write(int fd,const void *buff,size_t sz);
-ssize_t Read(int fd,void *buff,size_t sz);
-ssize_t BlockingRead(int fd,void *buff,size_t sz);
+void Write(int fd,const void *buff,size_t sz);
 
-size_t Fwrite(const void *p,size_t osize,size_t cnt,FILE *fp);
-size_t Fread(void *p,size_t osize,size_t cnt,FILE *fp);
-size_t BlockingFread(void *ptr,size_t osize,size_t cnt,FILE *fp);
+void Read(int fd,void *buff,size_t sz);
+
+void BlockingRead(int fd,void *buff,size_t sz);
+
+void Fwrite(const void *p,size_t osize,size_t cnt,FILE *fp);
+
+void Fread(void *p,size_t osize,size_t cnt,FILE *fp);
+
+void  BlockingFread(void *ptr,size_t osize,size_t cnt,FILE *fp);
 
 void Fseek(FILE *fp,long pos,int whence);
 
 void Pipe(int *fds);
+
 int Fork();
 
 #ifdef __cplusplus

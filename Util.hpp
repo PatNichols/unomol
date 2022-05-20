@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include "pconfig.h"
 using namespace std;
 
 namespace unomol {
