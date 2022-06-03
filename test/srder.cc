@@ -25,7 +25,7 @@ double nrgs[7][3]={ {-1.1167,-1.127,-1.131},
                     {-55.454,-56.102,-56.195},
                     {-39.727,-40.140,-40.202}};
 
-    ofstream out("nrgs.dat");
+    ofstream out("nrgs.out");
     ifstream in;
     out<<"MOL"<<" Basis "<<"           energy  "<<"    Szabo&Ostlund"<<endl;
     for (i=0;i<7;i++)

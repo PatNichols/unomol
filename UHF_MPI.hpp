@@ -364,8 +364,12 @@ class UnRestrictedHartreeFockMPI {
     }
 
     void findPolarizationPotential() {
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD,&rank);
         double px,py,pz;
-        const string xstr("XINTS.DAT");
+        char buffer[128];
+        sprintf(buffer,"XINTS_%04d.DAT",rank);
+        std::string xstr(buffer);
         int sshell=nshell;
         nshell=tnshell;
         no=tno;
@@ -489,12 +493,12 @@ class UnRestrictedHartreeFockMPI {
     }
 
     void final_output(double init_energy) {
-        FILE *out=create_file("short.gs.dat");
+        FILE *out=create_file("short.gs.out");
         fprintf(out,"%25.16le\n",init_energy);
         fprintf(out,"%25.16le\n",energy+nucrep);
         fprintf(out,"%25.16le\n",ediff);
         fclose(out);
-        out=create_file("scfout.gs.dat");
+        out=create_file("scfout.gs.out");
         double trace_t=SymmPack::TraceSymmPackProduct(PmatA,Tmat,no)+
                        SymmPack::TraceSymmPackProduct(PmatB,Tmat,no);
         double virial=fabs((energy+nucrep-trace_t)/(trace_t)/2.0);
@@ -575,7 +579,7 @@ class UnRestrictedHartreeFockMPI {
 
 
     void OintsOutput() {
-        FILE* out=create_file("intsout.dat");
+        FILE* out=create_file("intsout.out");
         fprintf(out,"  UnoMol alpha version \n");
         fprintf(out," If you are using this for serious research you are insane!\n");
         fprintf(out,"\n");
@@ -832,7 +836,7 @@ class UnRestrictedHartreeFockMPI {
             fprintf(out,"%7u %15.10lf %15.10lf \n",i+1,qc,NetChg[i]);
         }
         if (basis.prt_flags(2)) {
-            FILE* pout=create_file("overlaps.dat");
+            FILE* pout=create_file("overlaps.out");
             fprintf(pout,"   MULLIKEN OVERLAP POPULATIONS\n");
             fprintf(pout,"  i      j        Alpha value                 Beta Value\n");
             for (int i=0; i<no; ++i) {

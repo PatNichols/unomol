@@ -263,11 +263,11 @@ TwoElectronInts::calculate(const Basis& basis) {
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&psize);
     std::cerr << "rank " << rank << " psize = " << psize << "\n";
-    std::string cstr = cache.get_prefix();
-    size_t pos = cstr.find_first_of("_");
-    std::string new_str = cstr.substr(0,pos);
-    new_str += "_" + std::to_string(this->rank) + ".";
-    cache.set_prefix(std::string("./"),new_str);
+//    std::string cstr = cache.get_prefix();
+//    size_t pos = cstr.find_first_of("_");
+//    std::string new_str = cstr.substr(0,pos);
+//    new_str += "_" + std::to_string(this->rank) + ".";
+//    cache.set_prefix(std::string("./"),new_str);
     const Shell* shell(basis.shell_ptr());
     const Center* center(basis.center_ptr());
     const AuxFunctions& aux(*basis.auxfun_ptr());
