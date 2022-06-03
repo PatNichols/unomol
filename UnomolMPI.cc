@@ -9,7 +9,12 @@
 
 int main(int argc,char **argv) {
     MPI_Init(&argc,&argv);
-    string label("MINTS.DAT");
+    int rank,nproc;
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&nproc);
+    char buff[128];
+    sprintf(buff,"MINTS_%04d.DAT",rank);
+    std::string label(buff);
     unomol::Basis bas;
     unomol::TwoElectronInts t(bas,0,label);
     int nelec=bas.number_of_electrons();

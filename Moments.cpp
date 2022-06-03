@@ -255,7 +255,7 @@ void AnalyzeMoments (const double *Pmat, const Center * center, int ncen, int no
     tM.qyz = nM.qyz - eM.qyz;
     tM.qzz = nM.qzz - eM.qzz;
     double q00 = (tM.qzz - 0.5 * (tM.qxx + tM.qyy));
-    FILE* out=create_file("moments.dat");
+    FILE* out=create_file("moments.out");
     fprintf(out," MULTIPOLE MOMENT ANALYSIS \n");
     fprintf(out," units in bohr - hartree atomic units \n\n");
     fprintf(out," DIPOLE MOMENTS \n\n");
@@ -344,7 +344,7 @@ void AnalyzeMoments (const double *PmatA, const double* PmatB,
     tM.qyz = nM.qyz - eM.qyz;
     tM.qzz = nM.qzz - eM.qzz;
     double q00 = (tM.qzz - 0.5 * (tM.qxx + tM.qyy));
-    FILE* out = create_file ("moments.dat");
+    FILE* out = create_file ("moments.out");
     fprintf(out," MULTIPOLE MOMENT ANALYSIS \n");
     fprintf(out," units in bohr - hartree atomic units \n");
     fprintf(out,"\n");
@@ -390,7 +390,7 @@ void AnalyzeMOMoments (double *Cmat,int no2, int norb) {
     SymmPack::sp_trans(norb,dx,Cmat,wk);
     SymmPack::sp_trans(norb,dy,Cmat,wk);
     SymmPack::sp_trans(norb,dz,Cmat,wk);
-    FILE* out=create_file("mol_dipmom.dat");
+    FILE* out=create_file("mol_dipmom.out");
     fprintf(out," MULTIPOLE MOMENT ANALYSIS \n");
     fprintf(out," units in bohr - hartree atomic units \n\n");
     fprintf(out," MO TRANSISITION DIPOLE MOMENTS \n\n");
@@ -431,7 +431,7 @@ AnalyzeMOMoments (double *CmatA,double *CmatB,int no2, int norb) {
     SymmPack::sp_trans(norb,dx,CmatA,wk);
     SymmPack::sp_trans(norb,dy,CmatA,wk);
     SymmPack::sp_trans(norb,dz,CmatA,wk);
-    FILE* out=create_file("mol_dipmom.dat");
+    FILE* out=create_file("mol_dipmom.out");
     fprintf(out," MULTIPOLE MOMENT ANALYSIS \n");
     fprintf(out," units in bohr - hartree atomic units \n\n");
     fprintf(out," ALPHA MO TRANSISITION DIPOLE MOMENTS \n\n");

@@ -194,13 +194,13 @@ class Basis {
         tnorb=norb;
         tnelec=nelec;
         if (int_flag[0]==1) {
-            ain.open("posin.dat");
+            ain.open("posin.bas");
             if (!ain) {
-                fatal_error("could not open posin.dat");
+                fatal_error("could not open posin.bas");
             }
-            ain>>xsh;
-            ain>>xno;
-            ain>>xmaxl;
+            ain >> xsh;
+            ain >> xno;
+            ain >> xmaxl;
             tnshell+=xsh;
             tnorb+=xno;
             ++tncen;
@@ -209,16 +209,16 @@ class Basis {
         if (maxl>4) fatal_error("Angular Momentum is too large for present program\n");
         centers=new Center[tncen];
         shells=new Shell[tnshell];
-        for (int i=0; i<ncen; ++i) in>>centers[i];
-        for (int i=0; i<nshell; ++i) in>>shells[i];
+        for (int i=0; i<ncen; ++i) in >> centers[i];
+        for (int i=0; i<nshell; ++i) in >> shells[i];
         ffield=5.e-3;
         in.close();
         if (int_flag[0]==1) {
             (centers+ncen)->setCharge(1.0000000000000000000);
             (centers+ncen)->setPosition(0.0,0.0,0.0);
-            for (int i=nshell; i<tnshell; ++i) {
-                ain>>shells[i];
-                (shells+i)->setCenter(ncen);
+            for (int ish=nshell;ish<tnshell;++ish) {
+                ain >> shells[ish];
+                shells[ish].setCenter(ncen);
             }
             ain.close();
         }
@@ -227,9 +227,9 @@ class Basis {
         aux=new AuxFunctions(maxl);
         trans=new double[9];
         find_com(trans);
-        double xeps=DBL_EPSILON*norb*norb;
+        double xeps=DBL_EPSILON*norb*norb*0.5;
         if (eps<xeps) {
-            fprintf(stderr,"SCF convergence of %15.6le is way too low!\n",eps);
+            fprintf(stderr,"SCF convergence of %15.6le is too low!\n",eps);
             eps=xeps;
             fprintf(stderr,"SCF Convergence set at %15.6le\n",eps);
         }
@@ -343,6 +343,8 @@ class Basis {
         for (i=0; i<6; ++i) q[i]/=sumc;
         SymmPack::rsp(3,q,trans,qvals,tmp);
     }
+
+
 };
 
 }
