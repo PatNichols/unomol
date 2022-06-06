@@ -1,0 +1,52 @@
+Final Iteration              =           65
+Hartree Fock Energy          =    -5.610242757543371e+01 Hartree
+Electronic Energy            =    -6.805747014921056e+01 Hartree
+Nuclear Rep. Energy          =     1.195504257377685e+01 Hartree
+Kinetic Energy               =     5.611934984913878e+01 Hartree
+Difference in Final Energies =   -2.8421709430404007e-14 Hartree
+Pmatrix diff norm            =    3.7088262484930053e-14
+virial                       =    9.9984922959950040e-01
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+               Orbital Energies
+Orbital Energy          Occupancy
+      1   -1.5508524907614248e+01            2
+      2   -1.1452408820663964e+00            2
+      3   -6.2260838677466557e-01            2
+      4   -6.2260838677462527e-01            2
+      5   -4.1388122524850091e-01            2
+      6    2.2052643653179932e-01            0
+      7    3.2280535362843704e-01            0
+      8    3.2280535362983420e-01            0
+      9    9.7435311842022643e-01            0
+     10    9.7435311842649996e-01            0
+     11    1.0598589868290589e+00            0
+     12    1.2464303738710834e+00            0
+     13    1.2781023319386779e+00            0
+     14    1.2781023319422651e+00            0
+     15    1.6631359250628963e+00            0
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+           Mulliken Populations 
+Orbital  Net Population
+      1    1.9955024177014284e+00
+      2    6.9259275030538880e-01
+      3    1.0213260379953422e+00
+      4    6.9647638398852918e-01
+      5    6.9647638399189737e-01
+      6    9.1934347160015517e-01
+      7    4.7922776731734584e-01
+      8    4.7922776731525701e-01
+      9    9.1424157551837115e-01
+     10    5.2957747889132578e-01
+     11    1.7228433586428615e-01
+     12    5.2957747888646456e-01
+     13    1.7228433586888170e-01
+     14    5.2957747888646067e-01
+     15    1.7228433586888212e-01
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Mulliken Atomic Charges 
+Orbital   Nuclear Charge   Net Charge 
+      1    7.0000000000   -0.8944145557 
+      2    1.0000000000    0.2981381852 
+      3    1.0000000000    0.2981381852 
+      4    1.0000000000    0.2981381852 

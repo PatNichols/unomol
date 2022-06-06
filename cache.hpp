@@ -326,6 +326,52 @@ public:
         return write((ptr+n_left),(n-n_left));
     }
 
+    void seek(size_type pos)
+    {
+        int cmode = mode;
+        close();
+        if (cmode == 2) { 
+        mode = 2;
+        if (pos < m_cache_size) {
+            fp = Fmemopen(cache,m_cache_size,"r");
+            Fseek(fp,pos,SEEK_SET);
+            curr_pos = pos;
+            curr_file = 0;
+        }else{
+            pos -= m_mem_size;
+            fp = Fopen(fname.c_str(),"r");
+            Fseek(fp,pos,SEEK_SET);
+            curr_pos = pos;
+            curr_file = 1;
+        }
+        return;
+        }
+        if (mode == 1) {
+        mode = 1;
+        if (pos < m_cache_size) {
+            fp = Fmemopen(cache,m_cache_size,"a");
+            Fseek(fp,pos,SEEK_SET);
+            curr_pos = pos;
+            curr_file = 0;
+            m_file_size = 0;
+            m_mem_size = pos;
+        }else{
+            pos -= m_cache_size;
+            fp = Fopen(fname.c_str(),"r");
+            Fseek(fp,pos,SEEK_SET);
+            curr_pos = pos;
+            curr_file = 1;
+            m_file_size = pos;
+        }
+        }    
+        if (mode==0) {
+        std::cerr << "cannot seek on closed filesystem!\n";
+        }else{
+        std::cerr << "illegal file mode " << cmode << " in seek\n";
+        }
+        exit(EXIT_FAILURE);
+    }
+
 private:
     char * cache;
     size_type m_cache_size;

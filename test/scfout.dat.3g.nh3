@@ -1,0 +1,38 @@
+Final Iteration              =           64
+Hartree Fock Energy          =    -5.545407870328191e+01 Hartree
+Electronic Energy            =    -6.740912127705876e+01 Hartree
+Nuclear Rep. Energy          =     1.195504257377685e+01 Hartree
+Kinetic Energy               =     5.511646141402240e+01 Hartree
+Difference in Final Energies =   -4.2632564145606011e-14 Hartree
+Pmatrix diff norm            =    9.1933337672874110e-15
+virial                       =    1.0030627627445401e+00
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+               Orbital Energies
+Orbital Energy          Occupancy
+      1   -1.5304702492225944e+01            2
+      2   -1.0904806116787529e+00            2
+      3   -5.7270584564486871e-01            2
+      4   -5.7270584564472748e-01            2
+      5   -3.5253855159157094e-01            2
+      6    6.4020688824535321e-01            0
+      7    7.3072314602618504e-01            0
+      8    7.3072314602900923e-01            0
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+           Mulliken Populations 
+Orbital  Net Population
+      1    1.9953299220622895e+00
+      2    1.5902803257488018e+00
+      3    1.0616736018384669e+00
+      4    1.0616736018413955e+00
+      5    1.7608617580316224e+00
+      6    8.4339359682482118e-01
+      7    8.4339359682630111e-01
+      8    8.4339359682629955e-01
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Mulliken Atomic Charges 
+Orbital   Nuclear Charge   Net Charge 
+      1    7.0000000000   -0.4698192095 
+      2    1.0000000000    0.1566064032 
+      3    1.0000000000    0.1566064032 
+      4    1.0000000000    0.1566064032 

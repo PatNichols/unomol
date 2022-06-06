@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <cstring>
 #include <string>
+#include <cmath>
 using namespace std;
 
 int main()
@@ -41,7 +42,8 @@ double nrgs[7][3]={ {-1.1167,-1.127,-1.131},
      out.setf(ios::uppercase);
      out<<molcase<<spstr[i]<<"  ";
      out<<sec[0]<<" "<<setw(20)<<setprecision(10)<<snrg;
-     out<<setw(15)<<setprecision(7)<<nrgs[i][0]<<endl;
+     out<<setw(15)<<setprecision(7)<<nrgs[i][0]<< " ";
+     out<<setw(20)<<setprecision(7)<<std::scientific << fabs((snrg - nrgs[i][0])) << "\n";
      filename=((first+sec[1])+dot)+molcase;
      file=(char*)filename.c_str();
      in.open(file);
@@ -52,7 +54,8 @@ double nrgs[7][3]={ {-1.1167,-1.127,-1.131},
      out.setf(ios::uppercase);
      out<<molcase<<spstr[i]<<"  ";
      out<<sec[1]<<setw(20)<<setprecision(10)<<snrg;
-     out<<setw(15)<<setprecision(7)<<nrgs[i][1]<<endl;
+     out<<setw(15)<<setprecision(7)<<nrgs[i][1]<< " ";
+     out<<setw(20)<<setprecision(7)<<std::scientific << fabs((snrg - nrgs[i][1])) << "\n";
      filename=((first+sec[2])+dot)+molcase;
      file=(char*)filename.c_str();
      in.open(file);
@@ -62,7 +65,8 @@ double nrgs[7][3]={ {-1.1167,-1.127,-1.131},
      out.setf(ios::uppercase);
      out<<molcase<<spstr[i]<<"  ";
      out<<sec[2]<<setw(20)<<setprecision(10)<<snrg;
-     out<<setw(15)<<setprecision(7)<<nrgs[i][2]<<endl;
+     out<<setw(15)<<setprecision(7)<<nrgs[i][2]<< " ";
+     out<<setw(20)<<setprecision(7)<<std::scientific << fabs((snrg - nrgs[i][2])) << "\n";
      in.close();
     }   
     out.close();
