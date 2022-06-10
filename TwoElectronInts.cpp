@@ -287,17 +287,17 @@ TwoElectronInts::calculate(const Basis& basis) {
     cache.open_for_writing();
     putils::Stopwatch timer;
     timer.start();
-    for (int ish=start; ish<nshell; ++ish,ir0+=nls1) {
+    for (int ish=start; ish<nshell; ++ish) {
+        int ir0 = basis.offset(ish);
         sq.npr1=(shell+ish)->number_of_prims();
         sq.lv1=(shell+ish)->Lvalue();
         int cen1=(shell+ish)->center();
         sq.al1=(shell+ish)->alf_ptr();
         sq.co1=(shell+ish)->cof_ptr();
         sq.a=(center+cen1)->r_vec();
-        nls1=aux.number_of_lstates(sq.lv1);
-        int jr0=0;
-        int nls2=0;
-        for (int jsh=0; jsh<=ish; ++jsh,jr0+=nls2) {
+        int nls1=aux.number_of_lstates(sq.lv1);
+        for (int jsh=0; jsh<=ish; ++jsh) {
+            int jr0 = basis.offset(jsh);
             sq.npr2=(shell+jsh)->number_of_prims();
             sq.lv2=(shell+jsh)->Lvalue();
             int cen2=(shell+jsh)->center();
@@ -305,7 +305,7 @@ TwoElectronInts::calculate(const Basis& basis) {
             sq.co2=(shell+jsh)->cof_ptr();
             sq.b=(center+cen2)->r_vec();
             sq.ab2=dist_sqr(sq.a,sq.b);
-            nls2=aux.number_of_lstates(sq.lv2);
+            int nls2=aux.number_of_lstates(sq.lv2);
             bool switch12=sq.lv1<sq.lv2;
             if (switch12) {
                 it=sq.npr1;
@@ -324,19 +324,22 @@ TwoElectronInts::calculate(const Basis& basis) {
                 sq.a=sq.b;
                 sq.b=dp;
             }
-            int kr0=0;
-            int nls3=0;
-            for (int ksh=0; ksh<=ish; ++ksh,kr0+=nls3) {
+            for (int ksh=0; ksh<=ish; ++ksh) {
+                int kr0 = basis.offset(ksh);
                 sq.npr3=(shell+ksh)->number_of_prims();
                 sq.lv3=(shell+ksh)->Lvalue();
                 int cen3=(shell+ksh)->center();
                 sq.al3=(shell+ksh)->alf_ptr();
                 sq.co3=(shell+ksh)->cof_ptr();
                 sq.c=(center+cen3)->r_vec();
-                nls3=aux.number_of_lstates(sq.lv3);
-                int lr0=0;
-                int nls4=0;
-                for (int lsh=0; lsh<=ksh; ++lsh,lr0+=nls4) {
+                int nls3=aux.number_of_lstates(sq.lv3);
+                for (int lsh=0; lsh<=ksh; ++lsh) {
+#ifdef UNOMOL_MPI_API
+                    ++pknt;
+                    pknt%=psize;
+                    if (pknt!=rank) continue;
+#endif
+                    int lr0 = basis.offset(lsh);
                     sq.npr4=(shell+lsh)->number_of_prims();
                     sq.lv4=(shell+lsh)->Lvalue();
                     int cen4=(shell+lsh)->center();
@@ -344,12 +347,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                     sq.co4=(shell+lsh)->cof_ptr();
                     sq.d=(center+cen4)->r_vec();
                     sq.cd2=dist_sqr(sq.c,sq.d);
-                    nls4=aux.number_of_lstates(sq.lv4);
-#ifdef UNOMOL_MPI_API
-                    ++pknt;
-                    pknt%=psize;
-                    if (pknt!=rank) continue;
-#endif
+                    int nls4=aux.number_of_lstates(sq.lv4);
                     bool switch34=sq.lv3<sq.lv4;
                     if (switch34) {
                         it=sq.npr3;
@@ -369,23 +367,17 @@ TwoElectronInts::calculate(const Basis& basis) {
                         sq.d=dp;
                     }
                     int knt=0;
-                    int ir=ir0;
-                    for (int ils=0; ils<nls1; ++ils,++ir) {
-                        int ijr=ir*(ir+1)/2+jr0;
-                        int jr=jr0;
-                        int jend=nls2;
-                        if (ish==jsh) jend=ils+1;
-                        for (int jls=0; jls<jend; ++ijr,++jr,++jls) {
-                            int kr=kr0;
-                            int kend=nls3;
-                            if (ish==ksh) kend=ils+1;
-                            for (int kls=0; kls<kend; ++kls,++kr) {
-                                int klr=kr*(kr+1)/2+lr0;
-                                int lr=lr0;
-                                int lend=nls4;
-                                if (ksh==lsh) lend=kls+1;
-                                for (int lls=0; lls<lend; ++lr,++klr,++lls) {
-                                    if (klr>ijr) break;
+                    for (int ils=0; ils<nls1;++ils) {
+                        int ir = ir0 + ils;
+                        for (int jls=0; jls<nls2;++jls) {
+                            int jr = jr0 + jls;
+                            if ( jr > ir ) break;
+                            for (int kls=0; kls<nls3;++kls) {
+                                int kr = kr0 + kls;
+                                if ( kr > ir) break;
+                                for (int lls=0; lls<nls4;++lls) {
+                                    int lr = lr0 + lls;
+                                    if ( lr > kr || ( ir == kr && lr > jr) ) break;
                                     (sints+knt)->val=0.0;
                                     (sints+knt)->i=(unsigned int)ir;
                                     (sints+knt)->j=(unsigned int)jr;
@@ -395,7 +387,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                                     if (switch12) l12=(jls<<UNO_SHIFT)+ils;
                                     unsigned int l34=(kls<<UNO_SHIFT)+lls;
                                     if (switch34) l34=(lls<<UNO_SHIFT)+kls;
-                                    sq.lstates[knt]=(l12<<(UNO_SHIFT2))+l34;
+                                    sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
                                     ++knt;
                                 }
                             }

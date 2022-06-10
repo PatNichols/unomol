@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cfloat>
 #include <iomanip>
+#include <vector>
 using namespace std;
 #include "Util.hpp"
 #include "AuxFunctions.hpp"
@@ -155,6 +156,7 @@ class Center {
 
 class Basis {
   private:
+    std::vector<int> offsets;
     double eps,ffield;
     double *trans;
     int nshell,ncen,norb,maxl,nelec,maxits;
@@ -210,7 +212,13 @@ class Basis {
         centers=new Center[tncen];
         shells=new Shell[tnshell];
         for (int i=0; i<ncen; ++i) in >> centers[i];
-        for (int i=0; i<nshell; ++i) in >> shells[i];
+        int off = 0;
+        for (int ish=0; ish<nshell; ++ish) {
+            in >> shells[ish];
+            int lv = shells[ish].Lvalue();
+            offsets.push_back(off);
+            off += (lv+1)*(lv+2)/2;
+        }
         ffield=5.e-3;
         in.close();
         if (int_flag[0]==1) {
@@ -219,6 +227,9 @@ class Basis {
             for (int ish=nshell;ish<tnshell;++ish) {
                 ain >> shells[ish];
                 shells[ish].setCenter(ncen);
+                int lv = shells[ish].Lvalue();
+                offsets.push_back(off);
+                off += (lv+1)*(lv+2)/2;
             }
             ain.close();
         }
@@ -238,6 +249,10 @@ class Basis {
     ~Basis() {
         delete [] centers;
         delete [] shells;
+    }
+
+    constexpr int offset(int ish) const noexcept {
+        return offsets[ish];
     }
 
     constexpr int maxLvalue() const noexcept {
@@ -313,7 +328,7 @@ class Basis {
         double qvals[3];
         double sumx,sumy,sumz,sumc;
         double qi,cx,cy,cz,rx,ry,rz,x,y,z;
-
+        
         sumx=sumy=sumz=sumc=0.0;
         for (i=0; i<ncen; ++i) {
             qi=(centers+i)->charge();
