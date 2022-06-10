@@ -93,19 +93,16 @@ void GDPMInts(const Basis& bas,double* Hmat) {
     ShellPairData sp;
     sp.lstates=new unsigned short[ml2];
     int * ostates=new int[ml2];
-    int ir0=0;
-    int nls1=0;
-    for (int ishell=0; ishell<nshell; ir0+=nls1,ishell++) {
+    for (int ishell=0; ishell<nshell; ++ishell) {
         sp.npr1=(shell+ishell)->number_of_prims();
         sp.lv1=(shell+ishell)->Lvalue();
         int cn1=(shell+ishell)->center();
         sp.al1=(shell+ishell)->alf_ptr();
         sp.co1=(shell+ishell)->cof_ptr();
         sp.a=(center+cn1)->r_vec();
-        nls1=aux.number_of_lstates(sp.lv1);
-        int jr0=0;
-        int nls2=0;
-        for (int jshell=0; jshell<=ishell; jr0+=nls2,jshell++) {
+        int ir0 = bas.offset(ishell);
+        int nls1=aux.number_of_lstates(sp.lv1);
+        for (int jshell=0; jshell<=ishell; ++jshell) {
             sp.npr2=(shell+jshell)->number_of_prims();
             sp.lv2=(shell+jshell)->Lvalue();
             int cn2=(shell+jshell)->center();
@@ -113,16 +110,17 @@ void GDPMInts(const Basis& bas,double* Hmat) {
             sp.co2=(shell+jshell)->cof_ptr();
             sp.b=(center+cn2)->r_vec();
             sp.ab2=dist_sqr(sp.a,sp.b);
-            nls2=aux.number_of_lstates(sp.lv2);
+            int jr0 = bas.offset(jshell);
+            int nls2=aux.number_of_lstates(sp.lv2);
             int knt=0;
-            int ir=ir0;
-            for (int ils=0; ils<nls1; ++ir,ils++) {
-                int ijr=(ir*(ir+1)/2)+jr0;
-                int jend=nls2;
-                if (ishell==jshell) jend=ils+1;
-                for (int jls=0; jls<jend; ++ijr,jls++) {
-                    sp.lstates[knt]=(unsigned short)((ils<<4)+jls);
-                    ostates[knt]=ijr;
+            for (int ils=0; ils<nls1; ++ils) {
+                int ir = ir0 + ils;
+                int iir = ir * (ir + 1 ) / 2;
+                for (int jls=0; jls<nls2; ++jls) {
+                    int jr = jr0 + jls;
+                    if ( jr > ir ) break;
+                    sp.lstates[knt]=((ils<<4)+jls);
+                    ostates[knt]= iir + jr;
                     svals[knt]=0.0;
                     ++knt;
                 }

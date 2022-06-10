@@ -114,38 +114,32 @@ void MomentInts (const Basis & basis ) {
     if (!out) {
         fatal_error("could not open MOMINTS.DAT for writing");
     }
-    int ir0 = 0;
-    int nls1 = 0;
     for (ish = 0; ish < nshell; ++ish) {
-        ir0 = ir0 + nls1;
+        int ir0 = basis.offset(ish);
         sp.npr1 = (shell + ish)->number_of_prims ();
         sp.lv1 = (shell + ish)->Lvalue ();
         icen = (shell + ish)->center ();
         sp.al1 = (shell + ish)->alf_ptr ();
         sp.co1 = (shell + ish)->cof_ptr ();
         sp.a = (center + icen)->r_vec ();
-        nls1 = aux.number_of_lstates (sp.lv1);
-        int jr0 = 0;
-        int nls2 = 0;
+        int nls1 = aux.number_of_lstates (sp.lv1);
         for (jsh = 0; jsh <= ish; ++jsh) {
-            jr0 = jr0 + nls2;
+            int jr0 = basis.offset(jsh);
             sp.npr2 = (shell + jsh)->number_of_prims ();
             sp.lv2 = (shell + jsh)->Lvalue ();
             jcen = (shell + jsh)->center ();
             sp.al2 = (shell + jsh)->alf_ptr ();
             sp.co2 = (shell + jsh)->cof_ptr ();
-            nls2 = aux.number_of_lstates (sp.lv2);
+            int nls2 = aux.number_of_lstates (sp.lv2);
             sp.b = (center + jcen)->r_vec ();
             sp.ab2=dist_sqr(sp.a,sp.b);
             int knt = 0;
-            int ir = ir0;
-            for (int ils = 0; ils < nls1; ++ir, ++ils) {
-                int ijr = ir * (ir + 1) / 2 + jr0;
-                int jr = jr0;
-                int jend = nls2;
-                if (ish == jsh)
-                    jend = ils + 1;
-                for (int jls = 0; jls < jend; ++ijr, ++jr, ++jls) {
+            for (int ils = 0; ils < nls1; ++ils) {
+                int ir = ir0 + ils;
+                int iir = ir * (ir + 1) / 2;
+                for (int jls = 0; jls < nls2; ++jls) {
+                    int jr = jr0 + jls;
+                    if (jr > ir) break;
                     (mvals + knt)->dx = 0.0;
                     (mvals + knt)->dy = 0.0;
                     (mvals + knt)->dz = 0.0;
@@ -155,7 +149,7 @@ void MomentInts (const Basis & basis ) {
                     (mvals + knt)->qyy = 0.0;
                     (mvals + knt)->qyz = 0.0;
                     (mvals + knt)->qzz = 0.0;
-                    (mvals + knt)->ijr = ijr;
+                    (mvals + knt)->ijr = iir + jr;
                     (sp.lstates)[knt] = (unsigned short)((ils<<4)+jls);
                     factors[knt] = 4.0;
                     if (ir == jr) {
