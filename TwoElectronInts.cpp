@@ -73,7 +73,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
                     q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
-
+                    
                     cdi *= 0.5;
                     dx34.eval(cdi,(q[0]-sq.c[0]),(q[0]-sq.d[0]),sq.lv3,sq.lv4);
                     dy34.eval(cdi,(q[1]-sq.c[1]),(q[1]-sq.d[1]),sq.lv3,sq.lv4);
@@ -173,6 +173,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                             TwoInts* sints) {
     double p[3],q[3];
     double ab[3],cd[3];
+    double pa[3],qc[3];
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
     ab[0]=sq.a[0]-sq.b[0];
@@ -204,6 +205,9 @@ void calc_two_electron_ints(const ShellQuartet& sq,
             p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
             p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
             p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
+            pa[0] = p[0] - sq.a[0];
+            pa[1] = p[1] - sq.a[1];
+            pa[2] = p[2] - sq.a[2];
             for (int k=0; k<sq.npr3; ++k) {
                 double cxp=sq.al3[k];
                 double c3=sq.co3[k];
@@ -226,7 +230,10 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
                     q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
-                    rys.Recur(p,q,sq.a,sq.c,pxp,qxp,txp,lvt12,lvt34,nroots);
+                    qc[0] = q[0] - sq.c[0];
+                    qc[1] = q[1] - sq.c[1];
+                    qc[2] = q[2] - sq.c[2];
+                    rys.Recur(p,q,pa,qc,pxp,qxp,txp,lvt12,lvt34,nroots);
                     for (int kc=0; kc<sq.len; ++kc) {
                         unsigned int key=sq.lstates[kc];
                         int lls=key&UNO_MASK;
@@ -287,6 +294,7 @@ TwoElectronInts::calculate(const Basis& basis) {
     cache.open_for_writing();
     putils::Stopwatch timer;
     timer.start();
+    int ncalc = 0;
     for (int ish=start; ish<nshell; ++ish) {
         int ir0 = basis.offset(ish);
         sq.npr1=(shell+ish)->number_of_prims();
@@ -394,6 +402,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                         }
                     }
                     if (!knt) continue;
+                    ncalc += knt;
                     sq.len=knt;
 #ifdef UNOMOL_MD_INTS
                     calc_two_electron_ints(sq,aux,mds,sints);
@@ -427,7 +436,8 @@ TwoElectronInts::calculate(const Basis& basis) {
     cache.close();
     std::cerr << "Time for Two Electrons Integrals = " << timer.elapsed_time() << " seconds\n";
     size_t nb = cache.total_size()/sizeof(TwoInts);
-    std::cerr << " # of integrals = " << nb << "\n";
+    std::cerr << " # of write integrals = " << nb << "\n";
+    std::cerr << " # of calc  integrals = " << ncalc << "\n";
     delete [] sints;
 }
 
