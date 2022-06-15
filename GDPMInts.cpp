@@ -8,6 +8,7 @@ void calc_gdpm_ints(
     double *svals,
     const AuxFunctions& aux,Rys& rys,const double *p) {
     double q[3];
+    double qc[3];
     const double SRterm= 34.9868366552497250;
     const int npalf=6;
     const double palf[] = { 6.8505018000, 4.0491646000, 3.5941062989,
@@ -55,7 +56,10 @@ void calc_gdpm_ints(
                 q[0]=(cxp*sq.a[0]+dxp*sq.b[0])*cdi;
                 q[1]=(cxp*sq.a[1]+dxp*sq.b[1])*cdi;
                 q[2]=(cxp*sq.a[2]+dxp*sq.b[2])*cdi;
-                rys.Recur(p,q,p,sq.a,pxp,qxp,txp,0,lvt12,nroots);
+                qc[0] = q[0] - sq.a[0];
+                qc[1] = q[1] - sq.a[1];
+                qc[2] = q[2] - sq.a[2];
+                rys.Recur(p,q,pzero,qc,pxp,qxp,txp,0,lvt12,nroots);
                 for (int kc=0; kc<sq.len; ++kc) {
                     auto key=sq.lstates[kc];
                     int jls=key&0xF;

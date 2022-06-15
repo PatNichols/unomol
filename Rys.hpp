@@ -109,19 +109,11 @@ class Rys {
     }
 
     void Recur(
-        const double *p,const double *q,const double *a,const double *c,
+        const double *p,const double *q,const double *pa,const double *qc,
         const double& pxp,const double& qxp,const double& txp,
         int lvt12,int lvt34,int nroots
     ) noexcept {
-        double pa[3],qc[3],pq[3];
-        pa[0] = p[0]-a[0];
-        pa[1] = p[1]-a[1];
-        pa[2] = p[2]-a[2];
-
-        qc[0] = q[0]-c[0];
-        qc[1] = q[1]-c[1];
-        qc[2] = q[2]-c[2];
-
+        double pq[3];
         pq[0] = p[0]-q[0];
         pq[1] = p[1]-q[1];
         pq[2] = p[2]-q[2];

@@ -9,363 +9,123 @@ namespace unomol {
 
 //#define UNOMOL_MD_INTS
 
-#ifdef UNOMOL_MD_INTS
 
-void calc_two_electron_ints(const ShellQuartet& sq,
-                            const AuxFunctions& aux,
-                            MDInts& mds,
-                            TwoInts* sints) {
-    double p[3],q[3],pq[3];
-    const double SRterm= 34.9868366552497250;
-    const double threshold=1.e-12;
-    const int lvt12=sq.lv1+sq.lv2;
-    const int lvt34=sq.lv3+sq.lv4;
-    const int lvt=lvt12+lvt34;
-    MD_Dfunction& dx12 = mds.dx12;
-    MD_Dfunction& dy12 = mds.dy12;
-    MD_Dfunction& dz12 = mds.dz12;
-    MD_Dfunction& dx34 = mds.dx34;
-    MD_Dfunction& dy34 = mds.dy34;
-    MD_Dfunction& dz34 = mds.dz34;
-    MD_Rfunction& rfun = mds.rfun;
-    for (int i=0; i<sq.npr1; ++i) {
-        double axp=sq.al1[i];
-        double c1=sq.co1[i];
-        double f12=1.0;
-        int jend=sq.npr2;
-        if (sq.al1==sq.al2) {
-            f12=2.0;
-            jend=i+1;
-        }
-        for (int j=0; j<jend; ++j) {
-            if (i==j) f12=1.0;
-            double c12=c1*f12*sq.co2[j];
-            double bxp=sq.al2[j];
-            double pxp=axp+bxp;
-            double abi=1.0/pxp;
-            double s12= c12 * std::exp(-axp*bxp*sq.ab2*abi);
-            p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
-            p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
-            p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
-            abi *= 0.5;
-            dx12.eval(abi,(p[0]-sq.a[0]),(p[0]-sq.b[0]),sq.lv1,sq.lv2);
-            dy12.eval(abi,(p[1]-sq.a[1]),(p[1]-sq.b[1]),sq.lv1,sq.lv2);
-            dz12.eval(abi,(p[2]-sq.a[2]),(p[2]-sq.b[2]),sq.lv1,sq.lv2);
-            for (int k=0; k<sq.npr3; ++k) {
-                double cxp=sq.al3[k];
-                double c3=sq.co3[k];
-                double f34=1.0;
-                int lend=sq.npr4;
-                if (sq.al3==sq.al4) {
-                    f34=2.0;
-                    lend=k+1;
-                }
-                for (int l=0; l<lend; ++l) {
-                    if (k==l) f34=1.0;
-                    double c34=c3*f34*sq.co4[l];
-                    double dxp=sq.al4[l];
-                    double qxp=cxp+dxp;
-                    double cdi=1.0/qxp;
-                    double s34= c34 * std::exp(-cxp*dxp*sq.cd2*cdi);
-                    double txp=pxp+qxp;
-                    double sr= SRterm*s12*s34*2.*abi*cdi/sqrt(txp);
+struct PrimBlock {
+    double p[3];
+    double pa[3];
+    double pexp;
+    double sab;
+    double c12;
 
-                    q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
-                    q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
-                    q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
+    PrimBlock() = delete;
 
-                    cdi *= 0.5;
-                    dx34.eval(cdi,(q[0]-sq.c[0]),(q[0]-sq.d[0]),sq.lv3,sq.lv4);
-                    dy34.eval(cdi,(q[1]-sq.c[1]),(q[1]-sq.d[1]),sq.lv3,sq.lv4);
-                    dz34.eval(cdi,(q[2]-sq.c[2]),(q[2]-sq.d[2]),sq.lv3,sq.lv4);
+    PrimBlock(
+        const double& a1,const double& a2,
+        const double& c1,const double& c2,
+        const double * r1,const double * r2,const double& rsq)
+    {
+        pexp = a1 + a2;
+        double abi = 1./pexp;
+        c12 = c1 * c2;
+        sab = std::exp(-a1*a2*rsq*abi);
+        for (int k=0;k<3;++k) p[k] = (a1*r1[k]+a2*r2[k])*abi;
+        for (int k=0;k<3;++k) pa[k] = p[k] - r1[k];
+    }
+    
+};
 
-                    pq[0] = p[0]-q[0];
-                    pq[1] = p[1]-q[1];
-                    pq[2] = p[2]-q[2];
-                    double pq2 = pq[0]*pq[0] + pq[1]*pq[1] + pq[2]*pq[2];
-                    double w = pxp * qxp / txp;
-                    double t = w * pq2;
+struct ShellBlock {
+    std::vector< PrimBlock > prims;
+    double r12[3];
+    double r12sq;
+    int l1,l2,lt;
+    int off1,off2;
 
-                    rfun.eval(sr,t,w,pq,lvt);
-
-                    for (int kc=0; kc<sq.len; ++kc) {
-                        unsigned int key=sq.lstates[kc];
-                        unsigned int lls=key&UNO_MASK;
-                        key>>=UNO_SHIFT;
-                        unsigned int kls=key&UNO_MASK;
-                        key>>=UNO_SHIFT;
-                        unsigned int jls=key&UNO_MASK;
-                        key>>=UNO_SHIFT;
-                        unsigned int ils=key&UNO_MASK;
-                        const double nfact=
-                            aux.normalization_factor(sq.lv1,ils)*
-                            aux.normalization_factor(sq.lv2,jls)*
-                            aux.normalization_factor(sq.lv3,kls)*
-                            aux.normalization_factor(sq.lv4,lls);
-                        const int *lvc1 = aux.l_vector(sq.lv1,ils);
-                        const int *lvc2 = aux.l_vector(sq.lv2,jls);
-                        const int *lvc3 = aux.l_vector(sq.lv3,kls);
-                        const int *lvc4 = aux.l_vector(sq.lv4,lls);
-
-                        int l1 = lvc1[0];
-                        int m1 = lvc1[1];
-                        int n1 = lvc1[2];
-
-                        int l2 = lvc2[0];
-                        int m2 = lvc2[1];
-                        int n2 = lvc2[2];
-
-                        int l12 = l1 + l2;
-                        int m12 = m1 + m2;
-                        int n12 = n1 + n2;
-
-                        int l3 = lvc3[0];
-                        int m3 = lvc3[1];
-                        int n3 = lvc3[2];
-
-                        int l4 = lvc4[0];
-                        int m4 = lvc4[1];
-                        int n4 = lvc4[2];
-
-                        int l34 = l3 + l4;
-                        int m34 = m3 + m4;
-                        int n34 = n3 + n4;
-
-                        double sum = 0;
-
-                        for (int ix12=0; ix12<=l12; ++ix12) {
-                            for (int iy12=0; iy12<=m12; ++iy12) {
-                                for (int iz12=0; iz12<=n12; ++iz12) {
-                                    double v12 =  dx12.getValue(l1,l2,ix12) *
-                                                  dy12.getValue(m1,m2,iy12) *
-                                                  dz12.getValue(n1,n2,iz12);
-                                    for (int ix34=0; ix34<=l34; ++ix34) {
-                                        for (int iy34=0; iy34<=m34; ++iy34) {
-                                            const double v34 = v12 * dx34.getValue(l3,l4,ix34) *
-                                                               dy34.getValue(m3,m4,iy34);
-                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz12;
-                                            const double *dzp = dz34.getRow(n3,n4);
-                                            int sx = ((ix34+iy34)%2) ? -1:1;
-                                            for (int iz34=0; iz34<=n34; ++iz34) {
-                                                sum += sx * v34 *
-                                                       dzp[iz34] *
-                                                       rzp[iz34];
-                                                sx = -sx;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        (sints+kc)->val += sum * nfact;
-                    }
-                }
+    ShellBlock() = delete;
+    
+    explicit ShellBlock(const Shell& sh1, const Shell& sh2,
+        const Center * centers,
+        int off1_,int off2_)
+    {
+        const double * r1 = (centers+sh1.center())->r_vec();
+        const double * r2 = (centers+sh2.center())->r_vec();
+        off1 = off1_;
+        off2 = off2_;
+        l1 = sh1.Lvalue();
+        l2 = sh2.Lvalue();
+        lt = l1 + l2;
+        for (int k=0;k<3;++k) r12[k] = r1[k] - r2[k];
+        r12sq = 0.0;
+        for (int k=0;k<3;++k) r12sq += r12[k] * r12[k];
+        int np1 = sh1.number_of_prims();
+        int np2 = sh2.number_of_prims();
+        prims.clear();
+        prims.reserve(np1*np2);
+        for (int ip1=0;ip1<np1;++ip1) {
+            for (int ip2=0;ip2<np2;++ip2) {
+                prims.push_back( 
+                    PrimBlock(sh1.alf(ip1),sh2.alf(ip2),
+                        sh1.cof(ip1),sh2.cof(ip2),
+                        r1,r2,r12sq) );
             }
         }
     }
-}
+};
 
-#else
 
-void calc_two_electron_ints(const ShellQuartet& sq,
-                            const AuxFunctions& aux,
-                            Rys& rys,
-                            TwoInts* sints) {
-    double p[3],q[3];
-    double ab[3],cd[3];
+void TwoElectronInts::calculate(const Basis& basis) {
     const double SRterm= 34.9868366552497250;
-    const double threshold=1.e-12;
-    ab[0]=sq.a[0]-sq.b[0];
-    ab[1]=sq.a[1]-sq.b[1];
-    ab[2]=sq.a[2]-sq.b[2];
-    cd[0]=sq.c[0]-sq.d[0];
-    cd[1]=sq.c[1]-sq.d[1];
-    cd[2]=sq.c[2]-sq.d[2];
-    const int lvt12=sq.lv1+sq.lv2;
-    const int lvt34=sq.lv3+sq.lv4;
-    const int lvt=lvt12+lvt34;
-    const int nroots=lvt/2+1;
-    for (int i=0; i<sq.npr1; ++i) {
-        double axp=sq.al1[i];
-        double c1=sq.co1[i];
-        double f12=1.0;
-        int jend=sq.npr2;
-        if (sq.al1==sq.al2) {
-            f12=2.0;
-            jend=i+1;
-        }
-        for (int j=0; j<jend; ++j) {
-            if (i==j) f12=1.0;
-            double c12=c1*f12*sq.co2[j];
-            double bxp=sq.al2[j];
-            double pxp=axp+bxp;
-            double abi=1.0/pxp;
-            double s12=std::exp(-axp*bxp*sq.ab2*abi);
-            p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
-            p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
-            p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
-            for (int k=0; k<sq.npr3; ++k) {
-                double cxp=sq.al3[k];
-                double c3=sq.co3[k];
-                double f34=1.0;
-                int lend=sq.npr4;
-                if (sq.al3==sq.al4) {
-                    f34=2.0;
-                    lend=k+1;
-                }
-                for (int l=0; l<lend; ++l) {
-                    if (k==l) f34=1.0;
-                    double c34=c3*f34*sq.co4[l];
-                    double dxp=sq.al4[l];
-                    double qxp=cxp+dxp;
-                    double cdi=1.0/qxp;
-                    double s34=std::exp(-cxp*dxp*sq.cd2*cdi);
-                    double txp=pxp+qxp;
-                    double sr=SRterm*s12*s34*abi*cdi/sqrt(txp);
-                    if (sr<threshold) continue;
-                    q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
-                    q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
-                    q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
-                    rys.Recur(p,q,sq.a,sq.c,pxp,qxp,txp,lvt12,lvt34,nroots);
-                    for (int kc=0; kc<sq.len; ++kc) {
-                        unsigned int key=sq.lstates[kc];
-                        int lls=key&UNO_MASK;
-                        key>>=UNO_SHIFT;
-                        int kls=key&UNO_MASK;
-                        key>>=UNO_SHIFT;
-                        int jls=key&UNO_MASK;
-                        key>>=UNO_SHIFT;
-                        int ils=key&UNO_MASK;
-                        double nfact=c12*c34*sr*
-                                     aux.normalization_factor(sq.lv1,ils)*
-                                     aux.normalization_factor(sq.lv2,jls)*
-                                     aux.normalization_factor(sq.lv3,kls)*
-                                     aux.normalization_factor(sq.lv4,lls);
-                        const int *lv1 = aux.l_vector(sq.lv1,ils);
-                        const int *lv2 = aux.l_vector(sq.lv2,jls);
-                        const int *lv3 = aux.l_vector(sq.lv3,kls);
-                        const int *lv4 = aux.l_vector(sq.lv4,lls);
-                        double sum=
-                            rys.Shift(ab,cd,lv1,lv2,lv3,lv4,nroots);
-                        (sints+kc)->val+=sum*nfact;
-                    }
-                }
-            }
-        }
-    }
-}
-
-#endif
-
-void
-TwoElectronInts::calculate(const Basis& basis) {
     const double threshold=1.e-14;
-    int pknt=0;
-    const Shell* shell(basis.shell_ptr());
-    const Center* center(basis.center_ptr());
+    const double ints_eps = 1.e-14;
+    const Shell* shells(basis.shell_ptr());
+    const Center* centers(basis.center_ptr());
     const AuxFunctions& aux(*basis.auxfun_ptr());
     const int nshell=basis.number_of_shells();
     const int maxl=basis.maxLvalue();
     const int maxlst=aux.maxLstates();
-    int ml2=maxlst*maxlst;
-    int ml4=ml2*ml2;
-    int ir0=(0);
-    int nls1=(0);
-    for (int i=0; i<start; ++i,ir0+=nls1) {
-        int lv1=(shell+i)->Lvalue();
-        nls1=aux.number_of_lstates(lv1);
-    }
-#ifdef UNOMOL_MD_INTS
-    MDInts mds(maxl);
-#else
+    const int maxl4 = maxlst * maxlst * maxlst * maxlst;
     Rys rys(maxl);
-#endif
-    ShellQuartet sq(maxl);
-    TwoInts* sints=new TwoInts[ml4];
-    int it;
-    const double *dp;
+    std::vector< ShellBlock > shell_blocks;
+    std::vector< double > norms(maxl4);
+    std::vector< std::uint32_t > lstates(maxl4);
+    std::vector< TwoInts > sints(maxl4);
     cache.open_for_writing();
     putils::Stopwatch timer;
     timer.start();
-    for (int ish=start; ish<nshell; ++ish) {
-        int ir0 = basis.offset(ish);
-        sq.npr1=(shell+ish)->number_of_prims();
-        sq.lv1=(shell+ish)->Lvalue();
-        int cen1=(shell+ish)->center();
-        sq.al1=(shell+ish)->alf_ptr();
-        sq.co1=(shell+ish)->cof_ptr();
-        sq.a=(center+cen1)->r_vec();
-        int nls1=aux.number_of_lstates(sq.lv1);
+    /// Create ShellBlocks
+    shell_blocks.clear();
+    for (int ish=0; ish<nshell; ++ish) {
         for (int jsh=0; jsh<=ish; ++jsh) {
-            int jr0 = basis.offset(jsh);
-            sq.npr2=(shell+jsh)->number_of_prims();
-            sq.lv2=(shell+jsh)->Lvalue();
-            int cen2=(shell+jsh)->center();
-            sq.al2=(shell+jsh)->alf_ptr();
-            sq.co2=(shell+jsh)->cof_ptr();
-            sq.b=(center+cen2)->r_vec();
-            sq.ab2=dist_sqr(sq.a,sq.b);
-            int nls2=aux.number_of_lstates(sq.lv2);
-            bool switch12=sq.lv1<sq.lv2;
-            if (switch12) {
-                it=sq.npr1;
-                sq.npr1=sq.npr2;
-                sq.npr2=it;
-                it=sq.lv1;
-                sq.lv1=sq.lv2;
-                sq.lv2=it;
-                dp=sq.al1;
-                sq.al1=sq.al2;
-                sq.al2=dp;
-                dp=sq.co1;
-                sq.co1=sq.co2;
-                sq.co2=dp;
-                dp=sq.a;
-                sq.a=sq.b;
-                sq.b=dp;
-            }
-            for (int ksh=0; ksh<=ish; ++ksh) {
-                int kr0 = basis.offset(ksh);
-                sq.npr3=(shell+ksh)->number_of_prims();
-                sq.lv3=(shell+ksh)->Lvalue();
-                int cen3=(shell+ksh)->center();
-                sq.al3=(shell+ksh)->alf_ptr();
-                sq.co3=(shell+ksh)->cof_ptr();
-                sq.c=(center+cen3)->r_vec();
-                int nls3=aux.number_of_lstates(sq.lv3);
-                for (int lsh=0; lsh<=ksh; ++lsh) {
-#ifdef UNOMOL_MPI_API
-                    ++pknt;
-                    pknt%=psize;
-                    if (pknt!=rank) continue;
-#endif
-                    int lr0 = basis.offset(lsh);
-                    sq.npr4=(shell+lsh)->number_of_prims();
-                    sq.lv4=(shell+lsh)->Lvalue();
-                    int cen4=(shell+lsh)->center();
-                    sq.al4=(shell+lsh)->alf_ptr();
-                    sq.co4=(shell+lsh)->cof_ptr();
-                    sq.d=(center+cen4)->r_vec();
-                    sq.cd2=dist_sqr(sq.c,sq.d);
-                    int nls4=aux.number_of_lstates(sq.lv4);
-                    bool switch34=sq.lv3<sq.lv4;
-                    if (switch34) {
-                        it=sq.npr3;
-                        sq.npr3=sq.npr4;
-                        sq.npr4=it;
-                        it=sq.lv3;
-                        sq.lv3=sq.lv4;
-                        sq.lv4=it;
-                        dp=sq.al3;
-                        sq.al3=sq.al4;
-                        sq.al4=dp;
-                        dp=sq.co3;
-                        sq.co3=sq.co4;
-                        sq.co4=dp;
-                        dp=sq.c;
-                        sq.c=sq.d;
-                        sq.d=dp;
-                    }
+            int off1 = basis.offset(ish);
+            int off2 = basis.offset(jsh);
+            const Shell& sh1 = shells[ish];
+            const Shell& sh2 = shells[jsh];
+            shell_blocks.push_back(
+                ShellBlock(sh1,sh2,centers,
+                    off1,off2) );
+        }
+    }
+    // compute all erints over pairs of ShellBlocks
+    int nblks = shell_blocks.size();
+    std::cerr << " # of blocks = " << nblks << "\n";
+    int st_block = start * ( start + 1 ) / 2;
+    int ncalc = 0;
+    std::cerr << " start block = " << st_block << "\n";
+    int end_blks = (start+1) * ( start + 2) / 2;
+    for (int ib1=st_block; ib1 < nblks; ++ib1)  {
+        for (int ib2=0; ib2< nblks; ++ib2) {
+            const ShellBlock& sb1 = shell_blocks[ib1];
+            const ShellBlock& sb2 = shell_blocks[ib2];
+            int ir0 = sb1.off1;
+            int jr0 = sb1.off2;
+            int kr0 = sb2.off1;
+            int lr0 = sb2.off2;
+            if ( jr0 > ir0 ) break;
+            if ( kr0 > ir0 ) break;
+            int nls1 = aux.number_of_lstates(sb1.l1);
+            int nls2 = aux.number_of_lstates(sb1.l2);
+            int nls3 = aux.number_of_lstates(sb2.l1);
+            int nls4 = aux.number_of_lstates(sb2.l2);
                     int knt=0;
                     for (int ils=0; ils<nls1;++ils) {
                         int ir = ir0 + ils;
@@ -378,58 +138,81 @@ TwoElectronInts::calculate(const Basis& basis) {
                                 for (int lls=0; lls<nls4;++lls) {
                                     int lr = lr0 + lls;
                                     if ( lr > kr || ( ir == kr && lr > jr) ) break;
-                                    (sints+knt)->val=0.0;
-                                    (sints+knt)->i=(unsigned int)ir;
-                                    (sints+knt)->j=(unsigned int)jr;
-                                    (sints+knt)->k=(unsigned int)kr;
-                                    (sints+knt)->l=(unsigned int)lr;
+                                    sints[knt].val=0.0;
+                                    sints[knt].i=(unsigned int)ir;
+                                    sints[knt].j=(unsigned int)jr;
+                                    sints[knt].k=(unsigned int)kr;
+                                    sints[knt].l=(unsigned int)lr;
                                     unsigned int l12 = (ils<<UNO_SHIFT) + jls;
-                                    if (switch12) l12=(jls<<UNO_SHIFT)+ils;
                                     unsigned int l34=(kls<<UNO_SHIFT)+lls;
-                                    if (switch34) l34=(lls<<UNO_SHIFT)+kls;
-                                    sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
+                                    lstates[knt]=(l12<<UNO_SHIFT2)+l34;
+                                    norms[knt] =
+                                        aux.normalization_factor(sb1.l1,ils)*
+                                        aux.normalization_factor(sb1.l2,jls)*
+                                        aux.normalization_factor(sb2.l1,kls)*
+                                        aux.normalization_factor(sb2.l2,lls);
                                     ++knt;
                                 }
                             }
                         }
                     }
                     if (!knt) continue;
-                    sq.len=knt;
-#ifdef UNOMOL_MD_INTS
-                    calc_two_electron_ints(sq,aux,mds,sints);
-#else
-                    calc_two_electron_ints(sq,aux,rys,sints);
-#endif
+                    ncalc += knt;
+            int nroots = (sb1.lt + sb2.lt)/2 + 1;
+            // end loop to find int l state data
+            int np1 = sb1.prims.size();
+            int np2 = sb2.prims.size();
+            for (int ip1=0; ip1<np1; ++ip1) {
+                for (int ip2=0; ip2<np2; ++ip2) {
+                    const PrimBlock& sp1 = sb1.prims[ip1];
+                    const PrimBlock& sp2 = sb2.prims[ip2];
+                    double txp = sp1.pexp + sp2.pexp;
+                    double sr = SRterm * sp1.sab * sp2.sab /
+                                (sp1.pexp * sp2.pexp * sqrt(txp));
+                    if (sr < 1.e-12) continue;
+                    sr *= sp1.c12 * sp2.c12;        
+                    rys.Recur(sp1.p ,sp2.p,
+                              sp1.pa,sp2.pa,
+                              sp1.pexp,
+                              sp2.pexp,
+                              txp,
+                              sb1.lt,
+                              sb2.lt,
+                              nroots);
                     for (int kc=0; kc<knt; ++kc) {
-                        if (fabs((sints+kc)->val)>threshold) {
-                            cache.write(sints+kc,1);
-                        }
-                    }
-                    if (switch34) {
-                        sq.npr3=sq.npr4;
-                        sq.lv3=sq.lv4;
-                        sq.al3=sq.al4;
-                        sq.co3=sq.co4;
-                        sq.c=sq.d;
-                    }
+                        unsigned int key=lstates[kc];
+                        int lls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        int kls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        int jls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        int ils=key&UNO_MASK;
+                        const int *lv1 = aux.l_vector(sb1.l1,ils);
+                        const int *lv2 = aux.l_vector(sb1.l2,jls);
+                        const int *lv3 = aux.l_vector(sb2.l1,kls);
+                        const int *lv4 = aux.l_vector(sb2.l2,lls);
+                        double sum=
+                            rys.Shift(sb1.r12,sb2.r12,lv1,lv2,lv3,lv4,nroots);
+                        sints[kc].val += sum * sr * norms[kc];
+                    } // end loop over l states combos
+                }  // end loop over prim shell block 2
+            } // end loop over prim shell block 1
+            for (int kc=0; kc<knt; ++kc) {
+                if ( fabs(sints[kc].val) >= 1.e-14) {
+                    cache.write(&sints[kc],1);
                 }
             }
-            if (switch12) {
-                sq.npr1=sq.npr2;
-                sq.lv1=sq.lv2;
-                sq.al1=sq.al2;
-                sq.co1=sq.co2;
-                sq.a=sq.b;
-            }
-        }
-    }
+        }  // end loop over shell block 2
+    } // end loop over shell block 1
     timer.stop();
     cache.close();
     std::cerr << "Time for Two Electrons Integrals = " << timer.elapsed_time() << " seconds\n";
     size_t nb = cache.total_size()/sizeof(TwoInts);
-    std::cerr << " # of integrals = " << nb << "\n";
-    delete [] sints;
+    std::cerr << " # of integrals written  = " << nb << "\n";
+    std::cerr << " # if integrals calc.    = " << ncalc << "\n";
 }
+
 
 void
 TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
@@ -542,7 +325,7 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
                 }
                 Gmat[kl]+=da;
             }
-        } 
+        }
     }
     cache.close();
 }
