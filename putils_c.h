@@ -8,6 +8,7 @@
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
