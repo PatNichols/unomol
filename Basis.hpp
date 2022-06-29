@@ -158,7 +158,6 @@ class Basis {
   private:
     std::vector<int> offsets;
     double eps,ffield;
-    double *trans;
     int nshell,ncen,norb,maxl,nelec,maxits;
     int tnshell,tncen,tnorb,skipcen,tnelec;
     int scf_flag[3];
@@ -236,8 +235,6 @@ class Basis {
         for (int i=0; i<tnshell; i++) (shells+i)->normalize();
         skipcen=ncen;
         aux=new AuxFunctions(maxl);
-        trans=new double[9];
-        find_com(trans);
         double xeps=DBL_EPSILON*norb*norb*0.5;
         if (eps<xeps) {
             fprintf(stderr,"SCF convergence of %15.6le is too low!\n",eps);
@@ -251,7 +248,7 @@ class Basis {
         delete [] shells;
     }
 
-    constexpr int offset(int ish) const noexcept {
+    int offset(int ish) const noexcept {
         return offsets[ish];
     }
 
@@ -317,49 +314,6 @@ class Basis {
     constexpr double FiniteFieldValue() const noexcept {
         return ffield;
     }
-    constexpr const double *transformation_matrix() const noexcept {
-        return trans;
-    }
-    void find_com(double *trans) noexcept {
-        int i,icen;
-        const double *ri;
-        double q[6];
-        double tmp[3];
-        double qvals[3];
-        double sumx,sumy,sumz,sumc;
-        double qi,cx,cy,cz,rx,ry,rz,x,y,z;
-        
-        sumx=sumy=sumz=sumc=0.0;
-        for (i=0; i<ncen; ++i) {
-            qi=(centers+i)->charge();
-            ri=(centers+i)->r_vec();
-            sumx+=ri[0]*qi;
-            sumy+=ri[1]*qi;
-            sumz+=ri[2]*qi;
-            sumc+=qi;
-        }
-        cx=sumx/sumc;
-        cy=sumy/sumc;
-        cz=sumz/sumc;
-        q[5]=q[4]=q[3]=q[2]=q[1]=q[0]=0.0;
-        for (icen=0; icen<ncen; ++icen) {
-            qi=(centers+icen)->charge();
-            ri=(centers+icen)->r_vec();
-            x=ri[0]-cx;
-            y=ri[1]-cy;
-            z=ri[2]-cz;
-            q[0]+= (-2.0*x*x+y*y+z*z)*qi;
-            q[1]+= (-3.0*x*y)*qi;
-            q[2]+= (-2.0*y*y+x*x+z*z)*qi;
-            q[3]+= (-3.0*x*z)*qi;
-            q[4]+= (-3.0*y*z)*qi;
-            q[5]+= (-2.0*z*z+x*x+y*y)*qi;
-        }
-        for (i=0; i<6; ++i) q[i]/=sumc;
-        SymmPack::rsp(3,q,trans,qvals,tmp);
-    }
-
-
 };
 
 }
