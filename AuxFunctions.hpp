@@ -18,7 +18,8 @@ class AuxFunctions {
     int ***lxyz;
     double **nfact;
   public:
-    AuxFunctions(int maxl=2) {
+    AuxFunctions(int lmax=2) {
+        maxl = (lmax > 2) ? lmax:2
         int mlp1=maxl+1;
         nlst=new int[mlp1];
         for (int i=0; i<=maxl; i++) {
