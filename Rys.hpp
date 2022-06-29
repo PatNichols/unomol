@@ -58,7 +58,7 @@ class Rys {
         binomial = allocate_d2(maxr+1,maxr+1);
         roots = new double[maxr];
         weights = new double[maxr];
-        double * fact = new double[maxr];
+        double * fact = new double[maxr+1];
         fact[0] = 1.;
         for (int i=1; i<maxr; ++i) {
             fact[i] = double(i) * fact[i-1];
