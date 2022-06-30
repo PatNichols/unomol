@@ -156,6 +156,9 @@ class Center {
 
 class Basis {
   private:
+    Shell* shells;
+    Center* centers;
+    AuxFunctions* aux;
     std::vector<int> offsets;
     double eps,ffield;
     int nshell,ncen,norb,maxl,nelec,maxits;
@@ -163,11 +166,9 @@ class Basis {
     int scf_flag[3];
     int int_flag[3];
     int prt_flag[4];
-    Center* centers;
-    Shell* shells;
-    AuxFunctions* aux;
   public:
-    Basis(const std::string& infile=string("patin.dat")) {
+    Basis(const std::string& infile=string("patin.dat")):
+        shells(nullptr),centers(nullptr),aux(nullptr),offsets() {
         int xsh,xno,xmaxl;
         std::ifstream ain;
         std::ifstream in(infile.c_str());
@@ -244,6 +245,7 @@ class Basis {
     }
 
     ~Basis() {
+        delete aux;
         delete [] centers;
         delete [] shells;
     }
