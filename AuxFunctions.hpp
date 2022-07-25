@@ -19,7 +19,7 @@ class AuxFunctions {
     double **nfact;
   public:
     AuxFunctions(int lmax=2) {
-        maxl = (lmax > 2) ? lmax:2
+        maxl = (lmax > 2) ? lmax:2;
         int mlp1=maxl+1;
         nlst=new int[mlp1];
         for (int i=0; i<=maxl; i++) {
@@ -74,8 +74,7 @@ class AuxFunctions {
         delete [] nfact;
         for (int l=maxlp1; l;) {
             --l;
-            int nls = nlst[l];
-            for (int is=(nls+1); is;) {
+            for (int is=nlst[l]; is;) {
                 --is;
                 delete [] lxyz[l][is];
             }
