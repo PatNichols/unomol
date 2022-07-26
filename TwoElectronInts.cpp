@@ -495,7 +495,7 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
                 if (i!=j) da=da+da;
                 if (j<=k) {
                     Gmat[jk]-=sjk;
-                    if (i!=j && i<=k) Gmat[ik]-=sik;
+                    if (i==k && i!=j) Gmat[ik]-=sik;
                     if (k!=l && j<=l) Gmat[jl]-=sjl;
                 }
                 Gmat[kl]+=da;
@@ -547,8 +547,8 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
                 if (i!=j) da=da+da;
                 if (j<=k) {
                     Gmat[jk]-=sjk;
-                    if (i!=j && i<=k) Gmat[ik]-=sik;
-                    if (k!=l && j<=l) Gmat[jl]-=sjl;
+                    if (i==k && i!=j ) Gmat[ik]-=sik;
+                    if (k!=l && j<=l ) Gmat[jl]-=sjl;
                 }
                 Gmat[kl]+=da;
             }
