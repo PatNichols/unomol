@@ -63,6 +63,7 @@ class AuxFunctions {
             }
         }
         delete [] dfact;
+        std::cerr << "aux functions initialized\n";
     }
 
     ~AuxFunctions() {
