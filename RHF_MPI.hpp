@@ -60,7 +60,7 @@ class RestrictedHartreeFockMPI {
         Pmat=new double[tno2];
         Gmat=new double[tno2];
         Gbuf=new double[tno2];
-        if (!rank) {
+        if (rank==0) {
             PmatGs=new double[tno2];
             Pold2=new double[tno2];
             Pold=new double[tno2];
@@ -78,7 +78,7 @@ class RestrictedHartreeFockMPI {
     }
 
     ~RestrictedHartreeFockMPI() {
-        if (!rank) {
+        if (rank==0) {
             delete [] Wrka;
             delete [] sEvals;
             delete [] Evals;
@@ -98,20 +98,26 @@ class RestrictedHartreeFockMPI {
         delete [] Pmat;
     }
 
-    void update() {
+    void update() noexcept {
         int i;
-        MPI_Barrier(MPI_COMM_WORLD);
+        for (i=0; i<no2; ++i) Gmat[i] = 0.0;
+        for (i=0; i<no2; ++i) Gbuf[i] = 0.0;
         MPI_Bcast(Pmat,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
-        for (i=0; i<no2; ++i) Gbuf[i]=0.0;
-        tints.formGmatrix(Pmat,Gbuf);
         MPI_Barrier(MPI_COMM_WORLD);
+        tints.formGmatrix(Pmat,Gbuf);
         MPI_Reduce(Gbuf,Gmat,no2,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-        if (rank) {
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (rank!=0) {
             ++iteration;
             return;
         }
-        energy=SymmPack::TraceSymmPackProduct(Pmat,Hmat,no)*2.0+
-               SymmPack::TraceSymmPackProduct(Pmat,Gmat,no);
+        double e1 = SymmPack::TraceSymmPackProduct(Pmat,Hmat,no)*2.0;
+        double e2 = SymmPack::TraceSymmPackProduct(Pmat,Gmat,no);
+        energy = e1 + e2;
+        if (iteration < 2) {
+            std::cerr << "One Electron Energy = " << e1 << "\n";
+            std::cerr << "Two Electron Energy = " << e2 << "\n";
+        }
         ediff=energy-eold;
         eold=energy;
         for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+Gmat[i];
@@ -125,16 +131,16 @@ class RestrictedHartreeFockMPI {
         ++iteration;
     }
 
-    void dpm_update(TwoElectronInts& xints) {
+    void dpm_update(TwoElectronInts& xints) noexcept {
         int i;
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Bcast(Pmat,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
         for (i=0; i<no2; ++i) Gbuf[i]=0.0;
-        tints.formGmatrix(Pmat,Gbuf);
+        MPI_Bcast(Pmat,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
         xints.formGmatrix(Pmat,Gbuf);
-        MPI_Barrier(MPI_COMM_WORLD);
+        tints.formGmatrix(Pmat,Gbuf);
         MPI_Reduce(Gbuf,Gmat,no2,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-        if (rank) {
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (rank!=0) {
             ++iteration;
             return;
         }
@@ -153,8 +159,10 @@ class RestrictedHartreeFockMPI {
         ++iteration;
     }
 
-    void findEnergy() {
-        if (!rank) {
+    void findEnergy() noexcept {
+        int im_done = 0;
+        double init_energy = 1.e300;
+        if (rank==0) {
             nucrep=nuclear_repulsion_energy(ncen,basis.center_ptr());
             OneElectronInts(basis,Smat,Tmat,Hmat);
             MomentInts(basis);
@@ -167,39 +175,67 @@ class RestrictedHartreeFockMPI {
             } else {
                 PmatrixGuess();
             }
+            fprintf(stderr,"convergence based upon ");
+            switch (cflag) {
+            case 0:
+                fprintf(stderr,"energy\n");
+                break;
+            case 1:
+                fprintf(stderr,"density\n");
+                break;
+            default:
+                fprintf(stderr,"both energy and density\n");
+                break;
+            }
         }
-        im_done=0;
-        iteration=1;
+        putils::Stopwatch timer;
+        timer.start();
+        iteration=0;
         extrap=0;
         eold=0.0;
         update();
-        double init_energy=energy+nucrep;
-        if (scf_accel==1) {
-            update();
-            ++iteration;
+        if (!rank) {
+        fprintf(stderr,"Iteration     =  %6d\n",iteration);
+        fprintf(stderr,"Energy        =  %25.16le\n",(eold+nucrep));
+        fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
+        fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
+        init_energy=energy+nucrep;
+        iteration=1;
         }
+        update();
+        if (!rank) {
+        fprintf(stderr,"Iteration     =  %6d\n",iteration);
+        fprintf(stderr,"Energy        =  %25.16le\n",(eold+nucrep));
+        fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
+        fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
+        }
+        iteration=2;
+        im_done = 0;
         while (iteration<maxits) {
-            MPI_Barrier(MPI_COMM_WORLD);
-            MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
-            if (im_done) break;
-            if (!rank)  scf_converger();
+            if (!rank ) scf_converger();
             update();
-            if (!rank) {
+            if ( !rank) {
+                if (is_converged()) im_done = 1;
                 fprintf(stderr,"Iteration     =  %6d\n",iteration);
                 fprintf(stderr,"Energy        =  %25.16le\n",(eold+nucrep));
                 fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
                 fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
-                if (is_converged()) im_done=1;
             }
+            MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
+            MPI_Barrier(MPI_COMM_WORLD);
+            if (im_done) break; 
         }
-        if (rank) return;
-        memcpy(PmatGs,Pmat,sizeof(double)*no2);
-        for (int j=no2; j<tno2; ++j) PmatGs[j]=0.0;
-        energyGs=energy+nucrep;
-        FILE *fp=create_file("PMATRIX.DAT");
-        Fwrite(Pmat,sizeof(double),no2,fp);
-        fclose(fp);
-        final_output(init_energy);
+        timer.stop();
+        std::cerr << "SCF time = " << timer.elapsed_time() << " s\n";
+        if (!rank) {
+            memcpy(PmatGs,Pmat,sizeof(double)*no2);
+            for (int j=no2; j<tno2; ++j) PmatGs[j]=0.0;
+            energyGs=energy+nucrep;
+            FILE *fp=create_file("PMATRIX.DAT");
+            Fwrite(Pmat,sizeof(double),no2,fp);
+            fclose(fp);
+            final_output(init_energy);
+        }
     }
 
     void formCmatrix(double* c) {
@@ -260,13 +296,14 @@ class RestrictedHartreeFockMPI {
     }
 
     void FiniteFieldAnalysis() {
+        int im_done = 0;
         double polnrg[3],alfpol[3];
         double Emag=basis.FiniteFieldValue();
         double Efield[3];
         for (int ix=0; ix<3; ++ix) {
-            Efield[2]=Efield[1]=Efield[0]=0.0;
-            Efield[ix]=Emag;
-            if (!rank) {
+            if (rank == 0) {
+                Efield[2]=Efield[1]=Efield[0]=0.0;
+                Efield[ix]=Emag;
                 OneElectronInts(basis,Smat,Tmat,Hmat);
                 FiniteFieldMatrix(basis,Hmat,Efield);
                 formXmatrix();
@@ -274,19 +311,20 @@ class RestrictedHartreeFockMPI {
                 extrap=0;
                 eold=0.0;
             }
-            im_done=0;
             iteration=0;
             update();
-            double init_energy=energy+nucrep;
+            if (!rank) {
+                double init_energy=energy+nucrep;
+            }
             while (iteration<maxits) {
-                MPI_Barrier(MPI_COMM_WORLD);
-                MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
-                if (im_done) break;
                 if (!rank)  scf_converger();
                 update();
                 if (!rank) {
                     if (is_converged()) im_done=1;
                 }
+                MPI_Barrier(MPI_COMM_WORLD);
+                MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
+                if (im_done) break;
             }
             if (rank) continue;
             polnrg[ix]=energy+nucrep-energyGs;
@@ -360,21 +398,22 @@ class RestrictedHartreeFockMPI {
             vout = create_file("vpol.out");
             sout = create_file("spol.out");
         }
-        im_done=0;
+        int im_done=0;
         iteration=0;
         extrap=0;
         eold=0.0;
         dpm_update(xints);
-        double init_energy=energy+nucrep;
+        double init_energy;
+        if (rank==0) init_energy = energy+nucrep;
         while (iteration<maxits) {
-            MPI_Barrier(MPI_COMM_WORLD);
-            MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
-            if (im_done) break;
             if (!rank)  scf_converger();
             update();
             if (!rank) {
                 if (is_converged()) im_done=1;
             }
+            MPI_Barrier(MPI_COMM_WORLD);
+            MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
+            if (im_done) break;
         }
         if (!rank) {
             double final_energy=energy+nucrep;
@@ -396,8 +435,10 @@ class RestrictedHartreeFockMPI {
             in >> py;
             in >> pz;
             basis.SetCenterPosition(px,py,pz,pcen);
+            if (!rank) {
             nucrep=nuclear_repulsion_energy(basis.number_of_centers(),
                                             basis.center_ptr());
+            }
             xints.recalculate(basis);
             if (!rank) {
                 OneElectronInts(basis,Smat,Tmat,Hmat);

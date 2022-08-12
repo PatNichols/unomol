@@ -87,8 +87,13 @@ class RestrictedHartreeFock {
         int i;
         for (i=0; i<no2; ++i) Gmat[i]=0.0;
         tints.formGmatrix(Pmat,Gmat);
-        energy=SymmPack::TraceSymmPackProduct(Pmat,Hmat,no)*2.0+
-               SymmPack::TraceSymmPackProduct(Pmat,Gmat,no);
+        double e1 = SymmPack::TraceSymmPackProduct(Pmat,Hmat,no)*2.0;
+        double e2 = SymmPack::TraceSymmPackProduct(Pmat,Gmat,no);
+        energy = e1 + e2;
+        if (iteration < 3) {
+            std::cout << "One Electron Energy = " << e1 << "\n";
+            std::cout << "Two Electron Energy = " << e2 << "\n";
+        }
         ediff=energy-eold;
         eold=energy;
         for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+Gmat[i];

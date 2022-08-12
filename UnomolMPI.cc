@@ -2,6 +2,7 @@
 #include <string>
 #define UNOMOL_MPI_ABI
 #include <mpi.h>
+//#include <syncstream>
 #include "Basis.hpp"
 #include "TwoElectronInts.hpp"
 #include "RHF_MPI.hpp"
@@ -12,6 +13,7 @@ int main(int argc,char **argv) {
     int rank,nproc;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&nproc);
+    std::cout << "# of ranks = " << nproc << " rank = " << rank << "\n";
     char buff[128];
     sprintf(buff,"MINTS_%04d.DAT",rank);
     std::string label(buff);

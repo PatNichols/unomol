@@ -6,7 +6,6 @@
 #include <vector>
 #include <string>
 #include <cstring>
-//#include "pconfig.h"
 #include "Util.hpp"
 #include "Basis.hpp"
 #include "Rys.hpp"
@@ -76,7 +75,7 @@ class TwoElectronInts {
 
     TwoElectronInts(const Basis& basis,
                                  int start_shell,const string& base_str):
-        start(start_shell),rank(0),psize(1),cache(base_str,32L*1048576L)
+        start(start_shell),rank(0),psize(1),cache(base_str,128L*1048576L)
     {
         calculate(basis);
     }
@@ -95,9 +94,9 @@ class TwoElectronInts {
     void formGmatrix(const double* PmatA,const double* PmatB,
                      double* GmatA,double* GmatB);
   private:
+    putils::Cache cache;
     int start;
     int rank,psize;
-    putils::Cache cache;
 };
 
 

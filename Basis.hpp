@@ -290,6 +290,15 @@ class Basis {
     constexpr int int_flags(int i) const noexcept {
         return int_flag[i];
     }
+    
+    constexpr int do_dpm() const noexcept { return int_flag[0];}
+    constexpr int do_ffa() const noexcept { return int_flag[1];}
+    constexpr int scf_accel() const noexcept { return scf_flag[1];}
+    constexpr int scf_guess() const noexcept { return scf_flag[2];}
+    constexpr int scf_convegence_type() const noexcept { return scf_flag[0];}
+    constexpr int print_eigvecs() const noexcept { return prt_flag[0];}
+    constexpr int print_mullpop_overlaps() const noexcept { return prt_flag[2];}
+    
     constexpr const Shell* shell_ptr() const noexcept {
         return shells;
     }

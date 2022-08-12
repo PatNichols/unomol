@@ -1,10 +1,12 @@
-#include "TwoElectronInts.hpp"
 #include <mpi.h>
+#include "TwoElectronInts.hpp"
+
 namespace unomol {
 
 #define UNO_MASK 0xF
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
+
 
 //#define UNOMOL_MD_INTS
 
@@ -72,7 +74,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
                     q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
-
+                    
                     cdi *= 0.5;
                     dx34.eval(cdi,(q[0]-sq.c[0]),(q[0]-sq.d[0]),sq.lv3,sq.lv4);
                     dy34.eval(cdi,(q[1]-sq.c[1]),(q[1]-sq.d[1]),sq.lv3,sq.lv4);
@@ -172,6 +174,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                             TwoInts* sints) {
     double p[3],q[3];
     double ab[3],cd[3];
+    double pa[3],qc[3];
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
     ab[0]=sq.a[0]-sq.b[0];
@@ -203,6 +206,9 @@ void calc_two_electron_ints(const ShellQuartet& sq,
             p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
             p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
             p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
+            pa[0] = p[0] - sq.a[0];
+            pa[1] = p[1] - sq.a[1];
+            pa[2] = p[2] - sq.a[2];
             for (int k=0; k<sq.npr3; ++k) {
                 double cxp=sq.al3[k];
                 double c3=sq.co3[k];
@@ -225,7 +231,10 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
                     q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
-                    rys.Recur(p,q,sq.a,sq.c,pxp,qxp,txp,lvt12,lvt34,nroots);
+                    qc[0] = q[0] - sq.c[0];
+                    qc[1] = q[1] - sq.c[1];
+                    qc[2] = q[2] - sq.c[2];
+                    rys.Recur(p,q,pa,qc,pxp,qxp,txp,lvt12,lvt34,nroots);
                     for (int kc=0; kc<sq.len; ++kc) {
                         unsigned int key=sq.lstates[kc];
                         int lls=key&UNO_MASK;
@@ -260,14 +269,10 @@ void
 TwoElectronInts::calculate(const Basis& basis) {
     const double threshold=1.e-14;
     int pknt=0;
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    int psize = 0;
+    int rank = 0;
     MPI_Comm_size(MPI_COMM_WORLD,&psize);
-    std::cerr << "rank " << rank << " psize = " << psize << "\n";
-//    std::string cstr = cache.get_prefix();
-//    size_t pos = cstr.find_first_of("_");
-//    std::string new_str = cstr.substr(0,pos);
-//    new_str += "_" + std::to_string(this->rank) + ".";
-//    cache.set_prefix(std::string("./"),new_str);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     const Shell* shell(basis.shell_ptr());
     const Center* center(basis.center_ptr());
     const AuxFunctions& aux(*basis.auxfun_ptr());
@@ -294,17 +299,18 @@ TwoElectronInts::calculate(const Basis& basis) {
     cache.open_for_writing();
     putils::Stopwatch timer;
     timer.start();
-    for (int ish=start; ish<nshell; ++ish,ir0+=nls1) {
+    int ncalc = 0;
+    for (int ish=start; ish<nshell; ++ish) {
+        int ir0 = basis.offset(ish);
         sq.npr1=(shell+ish)->number_of_prims();
         sq.lv1=(shell+ish)->Lvalue();
         int cen1=(shell+ish)->center();
         sq.al1=(shell+ish)->alf_ptr();
         sq.co1=(shell+ish)->cof_ptr();
         sq.a=(center+cen1)->r_vec();
-        nls1=aux.number_of_lstates(sq.lv1);
-        int jr0=0;
-        int nls2=0;
-        for (int jsh=0; jsh<=ish; ++jsh,jr0+=nls2) {
+        int nls1=aux.number_of_lstates(sq.lv1);
+        for (int jsh=0; jsh<=ish; ++jsh) {
+            int jr0 = basis.offset(jsh);
             sq.npr2=(shell+jsh)->number_of_prims();
             sq.lv2=(shell+jsh)->Lvalue();
             int cen2=(shell+jsh)->center();
@@ -312,7 +318,7 @@ TwoElectronInts::calculate(const Basis& basis) {
             sq.co2=(shell+jsh)->cof_ptr();
             sq.b=(center+cen2)->r_vec();
             sq.ab2=dist_sqr(sq.a,sq.b);
-            nls2=aux.number_of_lstates(sq.lv2);
+            int nls2=aux.number_of_lstates(sq.lv2);
             bool switch12=sq.lv1<sq.lv2;
             if (switch12) {
                 it=sq.npr1;
@@ -331,19 +337,22 @@ TwoElectronInts::calculate(const Basis& basis) {
                 sq.a=sq.b;
                 sq.b=dp;
             }
-            int kr0=0;
-            int nls3=0;
-            for (int ksh=0; ksh<=ish; ++ksh,kr0+=nls3) {
+            for (int ksh=0; ksh<=ish; ++ksh) {
+                int kr0 = basis.offset(ksh);
                 sq.npr3=(shell+ksh)->number_of_prims();
                 sq.lv3=(shell+ksh)->Lvalue();
                 int cen3=(shell+ksh)->center();
                 sq.al3=(shell+ksh)->alf_ptr();
                 sq.co3=(shell+ksh)->cof_ptr();
                 sq.c=(center+cen3)->r_vec();
-                nls3=aux.number_of_lstates(sq.lv3);
-                int lr0=0;
-                int nls4=0;
-                for (int lsh=0; lsh<=ksh; ++lsh,lr0+=nls4) {
+                int nls3=aux.number_of_lstates(sq.lv3);
+                for (int lsh=0; lsh<=ksh; ++lsh) {
+                    if ( pknt !=  rank ) {
+                        pknt = (pknt+1)%psize;
+                        continue;
+                    }
+                    pknt = (pknt+1)%psize;
+                    int lr0 = basis.offset(lsh);
                     sq.npr4=(shell+lsh)->number_of_prims();
                     sq.lv4=(shell+lsh)->Lvalue();
                     int cen4=(shell+lsh)->center();
@@ -351,10 +360,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                     sq.co4=(shell+lsh)->cof_ptr();
                     sq.d=(center+cen4)->r_vec();
                     sq.cd2=dist_sqr(sq.c,sq.d);
-                    nls4=aux.number_of_lstates(sq.lv4);
-                    ++pknt;
-                    pknt%=psize;
-                    if (pknt!=rank) continue;
+                    int nls4=aux.number_of_lstates(sq.lv4);
                     bool switch34=sq.lv3<sq.lv4;
                     if (switch34) {
                         it=sq.npr3;
@@ -374,23 +380,17 @@ TwoElectronInts::calculate(const Basis& basis) {
                         sq.d=dp;
                     }
                     int knt=0;
-                    int ir=ir0;
-                    for (int ils=0; ils<nls1; ++ils,++ir) {
-                        int ijr=ir*(ir+1)/2+jr0;
-                        int jr=jr0;
-                        int jend=nls2;
-                        if (ish==jsh) jend=ils+1;
-                        for (int jls=0; jls<jend; ++ijr,++jr,++jls) {
-                            int kr=kr0;
-                            int kend=nls3;
-                            if (ish==ksh) kend=ils+1;
-                            for (int kls=0; kls<kend; ++kls,++kr) {
-                                int klr=kr*(kr+1)/2+lr0;
-                                int lr=lr0;
-                                int lend=nls4;
-                                if (ksh==lsh) lend=kls+1;
-                                for (int lls=0; lls<lend; ++lr,++klr,++lls) {
-                                    if (klr>ijr) break;
+                    for (int ils=0; ils<nls1;++ils) {
+                        int ir = ir0 + ils;
+                        for (int jls=0; jls<nls2;++jls) {
+                            int jr = jr0 + jls;
+                            if ( jr > ir ) break;
+                            for (int kls=0; kls<nls3;++kls) {
+                                int kr = kr0 + kls;
+                                if ( kr > ir) break;
+                                for (int lls=0; lls<nls4;++lls) {
+                                    int lr = lr0 + lls;
+                                    if ( lr > kr || ( ir == kr && lr > jr) ) break;
                                     (sints+knt)->val=0.0;
                                     (sints+knt)->i=(unsigned int)ir;
                                     (sints+knt)->j=(unsigned int)jr;
@@ -400,13 +400,14 @@ TwoElectronInts::calculate(const Basis& basis) {
                                     if (switch12) l12=(jls<<UNO_SHIFT)+ils;
                                     unsigned int l34=(kls<<UNO_SHIFT)+lls;
                                     if (switch34) l34=(lls<<UNO_SHIFT)+kls;
-                                    sq.lstates[knt]=(l12<<(UNO_SHIFT2))+l34;
+                                    sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
                                     ++knt;
                                 }
                             }
                         }
                     }
                     if (!knt) continue;
+                    ncalc += knt;
                     sq.len=knt;
 #ifdef UNOMOL_MD_INTS
                     calc_two_electron_ints(sq,aux,mds,sints);
@@ -440,13 +441,14 @@ TwoElectronInts::calculate(const Basis& basis) {
     cache.close();
     std::cerr << "Time for Two Electrons Integrals = " << timer.elapsed_time() << " seconds\n";
     size_t nb = cache.total_size()/sizeof(TwoInts);
-    std::cerr << " # of integrals = " << nb << "\n";
+    std::cerr << " # of write integrals = " << nb << "\n";
+    std::cerr << " # of calc  integrals = " << ncalc << "\n";
     delete [] sints;
 }
 
 void
 TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
-    constexpr const int BINSIZE=1024;
+    constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 
     cache.open_for_reading();
@@ -498,7 +500,7 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
                 if (i!=j) da=da+da;
                 if (j<=k) {
                     Gmat[jk]-=sjk;
-                    if (i!=j && i<=k) Gmat[ik]-=sik;
+                    if (i==k && i!=j) Gmat[ik]-=sik;
                     if (k!=l && j<=l) Gmat[jl]-=sjl;
                 }
                 Gmat[kl]+=da;
@@ -550,8 +552,8 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
                 if (i!=j) da=da+da;
                 if (j<=k) {
                     Gmat[jk]-=sjk;
-                    if (i!=j && i<=k) Gmat[ik]-=sik;
-                    if (k!=l && j<=l) Gmat[jl]-=sjl;
+                    if (i==k && i!=j ) Gmat[ik]-=sik;
+                    if (k!=l && j<=l ) Gmat[jl]-=sjl;
                 }
                 Gmat[kl]+=da;
             }
@@ -563,7 +565,7 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
 void
 TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
                              double *GmatA,double *GmatB) {
-    constexpr const int BINSIZE=1024;
+    constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 
     cache.open_for_reading();

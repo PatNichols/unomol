@@ -342,11 +342,6 @@ TwoElectronInts::calculate(const Basis& basis) {
                 sq.c=(center+cen3)->r_vec();
                 int nls3=aux.number_of_lstates(sq.lv3);
                 for (int lsh=0; lsh<=ksh; ++lsh) {
-#ifdef UNOMOL_MPI_API
-                    ++pknt;
-                    pknt%=psize;
-                    if (pknt!=rank) continue;
-#endif
                     int lr0 = basis.offset(lsh);
                     sq.npr4=(shell+lsh)->number_of_prims();
                     sq.lv4=(shell+lsh)->Lvalue();
