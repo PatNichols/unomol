@@ -16,6 +16,11 @@ extern "C" {
 
 #define BUFF_SIZE 64
 
+
+void set_exit_function(void (*f)());
+
+void fatal_error();
+
 void * Malloc(size_t n);
 void * Grow(void **ptr,size_t old_size,size_t new_size);
 void * Calloc(size_t n);
@@ -41,8 +46,6 @@ void BlockingRead(int fd,void *buff,size_t sz);
 void Fwrite(const void *p,size_t osize,size_t cnt,FILE *fp);
 
 void Fread(void *p,size_t osize,size_t cnt,FILE *fp);
-
-void  BlockingFread(void *ptr,size_t osize,size_t cnt,FILE *fp);
 
 void Fseek(FILE *fp,long pos,int whence);
 
