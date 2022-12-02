@@ -74,7 +74,7 @@ void calc_moments (MomInts * mvals,
                      ovl * p[0] * p[2]);
                 (mvals + kc)->qyy +=
                     (ovl * (p[1] * p[1] + abi) +
-                     2.0 * pvy * (p[0] * dy.getValue (m1, m2, 1) +
+                     2.0 * pvy * (p[1] * dy.getValue (m1, m2, 1) +
                                   dy.getValue (m1, m2, 2)));
                 (mvals + kc)->qyz +=
                     (sov * dx.getValue (l1, l2, 0) *
