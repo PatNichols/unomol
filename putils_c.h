@@ -14,20 +14,16 @@
 extern "C" {
 #endif
 
-#define BUFF_SIZE 64
-
-
-void set_exit_function(void (*f)());
-
 void fatal_error();
 
 void * Malloc(size_t n);
 void * Grow(void **ptr,size_t old_size,size_t new_size);
 void * Calloc(size_t n);
+void * AlignedAlloc(size_t al,size_t n);
 
 #define MALLOC_PTR(type) ( type * ) Malloc( sizeof ( type ) )
 #define MALLOC_ARRAY(type,n) (type *)Malloc(sizeof(type)*(n))
-#define CHAR_ALLOC(n) (char*)Malloc(n)
+#define CHAR_ALLOC(n) (char*)Malloc(n+1)
 
 int Open(const char *name,int flgs);
 
@@ -36,6 +32,8 @@ FILE * Fdopen(int fdes,const char *mode);
 FILE * Fopen(const char *name,const char *mode);
 
 FILE * Fmemopen(char *b,size_t bsize,const char *mode);
+
+FILE * Popen(const char *cmd,const char *mode);
 
 void Write(int fd,const void *buff,size_t sz);
 
