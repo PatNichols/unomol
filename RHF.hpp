@@ -83,10 +83,13 @@ class RestrictedHartreeFock {
         delete [] PmatGs;
     }
 
-    void update() noexcept {
+    void update(TwoElectronInts *xints = nullptr) noexcept {
         int i;
         for (i=0; i<no2; ++i) Gmat[i]=0.0;
         tints.formGmatrix(Pmat,Gmat);
+        if ( xints ) {
+            xints->formGmatrix(Pmat,Gmat);
+        }
         double e1 = SymmPack::TraceSymmPackProduct(Pmat,Hmat,no)*2.0;
         double e2 = SymmPack::TraceSymmPackProduct(Pmat,Gmat,no);
         energy = e1 + e2;
@@ -94,26 +97,6 @@ class RestrictedHartreeFock {
             std::cout << "One Electron Energy = " << e1 << "\n";
             std::cout << "Two Electron Energy = " << e2 << "\n";
         }
-        ediff=energy-eold;
-        eold=energy;
-        for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+Gmat[i];
-        SymmPack::sp_trans(no,Fock,Xmat,Wrka);
-        SymmPack::rsp(no,Fock,Wmat,Evals,Wrka);
-        formCmatrix(Cmat);
-        if (scf_accel==1) memcpy(Pold2,Pold,sizeof(double)*no2);
-        memcpy(Pold,Pmat,sizeof(double)*no2);
-        formPmatrix(Pmat,Cmat,nocc);
-        pdiff=SymmPack::SymmPackDiffNorm(Pmat,Pold,no);
-        ++iteration;
-    }
-
-    void dpm_update(TwoElectronInts& xints) noexcept {
-        int i;
-        for (i=0; i<tno2; ++i) Gmat[i]=0.0;
-        xints.formGmatrix(Pmat,Gmat);
-        tints.formGmatrix(Pmat,Gmat);
-        energy=SymmPack::TraceSymmPackProduct(Pmat,Hmat,no)*2.0+
-               SymmPack::TraceSymmPackProduct(Pmat,Gmat,no);
         ediff=energy-eold;
         eold=energy;
         for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+Gmat[i];
@@ -336,11 +319,11 @@ class RestrictedHartreeFock {
         iteration=0;
         extrap=0;
         eold=0.0;
-        dpm_update(xints);
+        update(&xints);
         double init_energy=energy+nucrep;
         while (iteration<maxits) {
             scf_converger();
-            dpm_update(xints);
+            update(&xints);
             if (is_converged()) break;
         }
 
@@ -372,11 +355,11 @@ class RestrictedHartreeFock {
             iteration=0;
             extrap=0;
             eold=0.0;
-            dpm_update(xints);
+            update(&xints);
             double init_energy=energy+nucrep;
             while (iteration<maxits) {
                 scf_converger();
-                dpm_update(xints);
+                update(&xints);
                 if (is_converged()) break;
             }
             final_energy=energy+nucrep;
