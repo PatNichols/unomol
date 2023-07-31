@@ -4,11 +4,28 @@
 extern "C" {
 #endif
 
+void putils_default_exit_fun()
+{
+    exit(-1);
+}
+
+static void (*putils_exit_fun) = &default_putils_exit_fun;
+
+
+void putils_set_exit( void (*f)() ) {
+    putils_exit_fun = f;
+}
+
+void putils_fatal_error
+{
+    (*putils_exit_fun)();
+}
+
 void * Malloc(size_t n) {
     void * p = malloc(n);
     if (p) return p;
     fprintf(stderr,"malloc failed for size %lu\n",n);
-    exit(EXIT_FAILURE);
+    putils_fatal_error();
 }
 
 void * Calloc(size_t n) {
@@ -22,6 +39,11 @@ void * Grow(void **p,size_t old_size,size_t new_size)
     size_t cpy_size;
     void *tmp;
 
+    if ( old_size == 0) {
+        fprintf(stderr,
+    }
+
+    if (!p && new_size) return Malloc(new_size);
     if (old_size==new_size) return p;
     tmp = Malloc(new_size);
     cpy_size = (new_size > old_size) ? old_size:new_size;
