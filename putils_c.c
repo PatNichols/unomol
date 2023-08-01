@@ -1,26 +1,31 @@
 #include "putils_c.h"
 
-void default_exit_function() { exit(EXIT_FAILURE);}
-
-void (*exit_fun)() = default_exit_function;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void set_exit_function(void (*f)()) {
-    exit_fun = f;
+void putils_default_exit_fun()
+{
+    exit(-1);
 }
 
-void fatal_error() { 
-    (*exit_fun)();
+static void (*putils_exit_fun)() = &putils_default_exit_fun;
+
+
+void putils_set_exit( void (*f)() ) {
+    putils_exit_fun = f;
+}
+
+void putils_fatal_error()
+{
+    (*putils_exit_fun)();
 }
 
 void * Malloc(size_t n) {
     void * p = malloc(n);
     if (p) return p;
     fprintf(stderr,"malloc failed for size %lu\n",n);
-    fatal_error();
+    putils_fatal_error();
     return 0x0;
 }
 
@@ -35,6 +40,14 @@ void * Resize(void **p,size_t old_size,size_t new_size)
     size_t cpy_size;
     void *tmp;
 
+    if ( new_size == 0) {
+        fprintf(stderr,"Resize called with new size = 0\n");
+        putils_fatal_error();
+    }
+    if ( old_size == 0) {
+        p = Malloc(new_size);
+        return p;
+    }
     if (old_size==new_size) return p;
     tmp = Malloc(new_size);
     cpy_size = (new_size > old_size) ? old_size:new_size;
@@ -49,7 +62,7 @@ FILE * Fopen(const char *name,const char *mode) {
     if ( !fp ) {
         fprintf(stderr,"could not open file %s in mode %s\n",name,mode);
         fprintf(stderr,"%s\n",strerror(errno));
-        fatal_error();
+        putils_fatal_error();
     }
     return fp;
 }
@@ -59,7 +72,7 @@ int Open(const char *name,int flgs)
     int f = open(name,flgs);
     if (f>=0) return f;
     fprintf(stderr,"error in opening %s : %s\n",name,strerror(errno));
-    fatal_error();
+    putils_fatal_error();
     return -1;
 }
 
@@ -69,7 +82,7 @@ FILE *Fdopen(int desc,const char *mode)
     if (fp) return fp;
     fprintf(stderr,"fdopen failed for desc %d in mode %s error = %s\n",
             desc,mode,strerror(errno));
-    fatal_error();
+    putils_fatal_error();
     return 0x0;
 }
 
@@ -78,7 +91,7 @@ FILE * Fmemopen(char *b,size_t bsize,const char *mode)
     FILE * fp = fmemopen(b,bsize,mode);
     if (fp) return fp;
     fprintf(stderr,"error in fmemopen %s\n",strerror(errno));
-    fatal_error();
+    putils_fatal_error();
     return 0x0;
 }
 
@@ -92,7 +105,7 @@ void Read(int fd,void *buff,size_t sz)
     c = read(fd,buff,sz);
     if (c < sz) {
         fprintf(stderr,"read failed %s\n",strerror(errno));
-        fatal_error();
+        putils_fatal_error();
     }
     return;
 }
@@ -113,7 +126,7 @@ void Write(int fd,const void *buff,size_t sz)
         c = write(fd,bp,rem);
         if (c < 0) {
             fprintf(stderr,"block write failed %s\n",strerror(errno));
-            fatal_error();
+            putils_fatal_error();
         }
         rem -= c;
         if (rem==0) break;
@@ -142,19 +155,19 @@ void BlockingRead(int fd,void *buff,size_t sz)
         fprintf(stderr,"c readblock read size %ld\n",c);
         if (c<0) {
             fprintf(stderr,"blocking read failed : %s\n",strerror(errno));
-            fatal_error();
+            putils_fatal_error();
         }
         if (c==0) {
             int e = nanosleep(&twait,&tdurr);
             if (e < 0) {
                 if (errno == EINTR) continue;
                 fprintf(stderr,"error in nanosleep %s \n",strerror(errno));
-                fatal_error();
+                putils_fatal_error();
             }
             acc += dwait;
             if ( acc > tmax) {
                 fprintf(stderr,"block read timed out!\n");
-                fatal_error();
+                putils_fatal_error();
             }
         } else {
             rem -= c;
@@ -172,7 +185,7 @@ void Fwrite(const void *p,size_t osize,size_t cnt,FILE *fp)
     if (e==cnt) return;
     e = ferror(fp);
     fprintf(stderr,"Fwrite failed ferror = %s\n",strerror(e));
-    fatal_error();
+    putils_fatal_error();
 }
 
 void Fread(void *p,size_t osize,size_t cnt,FILE *fp)
@@ -181,7 +194,7 @@ void Fread(void *p,size_t osize,size_t cnt,FILE *fp)
     if (e==cnt) return;
     e = ferror(fp);
     fprintf(stderr,"Fread failed ferror = %s\n",strerror(e));
-    fatal_error();
+    putils_fatal_error();
 }
 
 void Fseek(FILE *fp,long pos,int whence)
@@ -189,7 +202,7 @@ void Fseek(FILE *fp,long pos,int whence)
     int e = fseek(fp,pos,whence);
     if (!e) return;
     fprintf(stderr,"error in fseek %s\n",strerror(errno));
-    fatal_error();
+    putils_fatal_error();
 }
 
 int Fork()
@@ -197,7 +210,7 @@ int Fork()
     int p = fork();
     if ( p < 0) {
         fprintf(stderr,"fork failed %s!\n",strerror(errno));
-        fatal_error();
+        putils_fatal_error();
     }
     return p;
 }
@@ -207,7 +220,7 @@ void Pipe(int *fds)
     int e = pipe(fds);
     if (e) {
         fprintf(stderr,"opening pipe failed %s!\n",strerror(errno));
-        fatal_error();
+        putils_fatal_error();
     }
 }
 
@@ -217,7 +230,7 @@ FILE * Popen(const char *cmd,const char *mode)
     if ( !fp ) {
         fprintf(stderr,"popen failed %s mode %s : %s\n",
             cmd,mode,strerror(errno));
-        fatal_error();
+        putils_fatal_error();
     }
     return fp;
 }
