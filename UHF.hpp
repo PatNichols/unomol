@@ -98,13 +98,16 @@ class UnRestrictedHartreeFock {
         delete [] PmatGsA;
     }
 
-    void update() noexcept {
+    void update(TwoElectronInts *xints = nullptr) noexcept {
         int i;
         for (i=0; i<no2; ++i) {
             GmatA[i]=0.0;
             GmatB[i]=0.0;
         }
         tints.formGmatrix(PmatA,PmatB,GmatA,GmatB);
+        if ( xints != nullptr ) {
+            xints->formGmatrix(PmatA,PmatB,GmatA,GmatB);    
+        }
         energy=SymmPack::TraceSymmPackProduct(PmatA,Hmat,no)+
                SymmPack::TraceSymmPackProduct(PmatB,Hmat,no)+
                0.5*(SymmPack::TraceSymmPackProduct(PmatA,GmatA,no)+
@@ -130,38 +133,6 @@ class UnRestrictedHartreeFock {
         ++iteration;
     }
 
-    void dpm_update(TwoElectronInts& xints) noexcept {
-        int i;
-        for (i=0; i<no2; ++i) {
-            GmatA[i]=0.0;
-            GmatB[i]=0.0;
-        }
-        tints.formGmatrix(PmatA,PmatB,GmatA,GmatB);
-        xints.formGmatrix(PmatA,PmatB,GmatA,GmatB);
-        energy=SymmPack::TraceSymmPackProduct(PmatA,Hmat,no)+
-               SymmPack::TraceSymmPackProduct(PmatB,Hmat,no)+
-               0.5*(SymmPack::TraceSymmPackProduct(PmatA,GmatA,no)+
-                    SymmPack::TraceSymmPackProduct(PmatB,GmatB,no));
-        ediff=energy-eold;
-        eold=energy;
-        for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+GmatA[i];
-        SymmPack::sp_trans(no,Fock,Xmat,Wrka);
-        SymmPack::rsp(no,Fock,Wmat,EvalsA,Wrka);
-        formCmatrix(CmatA);
-        if (scf_accel==1) memcpy(Pold2A,PoldA,sizeof(double)*no2);
-        memcpy(PoldA,PmatA,sizeof(double)*no2);
-        formPmatrix(PmatA,CmatA,noccA);
-        pdiff=SymmPack::SymmPackDiffNorm(PmatA,PoldA,no);
-        for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+GmatB[i];
-        SymmPack::sp_trans(no,Fock,Xmat,Wrka);
-        SymmPack::rsp(no,Fock,Wmat,EvalsB,Wrka);
-        formCmatrix(CmatB);
-        if (scf_accel==1) memcpy(Pold2B,PoldB,sizeof(double)*no2);
-        memcpy(PoldB,PmatB,sizeof(double)*no2);
-        formPmatrix(PmatB,CmatB,noccB);
-        pdiff+=SymmPack::SymmPackDiffNorm(PmatB,PoldB,no);
-        ++iteration;
-    }
 
     void findEnergy() noexcept {
         nucrep=nuclear_repulsion_energy(ncen,basis.center_ptr());
@@ -182,6 +153,10 @@ class UnRestrictedHartreeFock {
         eold=0.0;
         update();
         double init_energy=energy+nucrep;
+        iteration=1;
+        extrap=0;
+        eold=0.0;
+        update();
         while (iteration<maxits) {
             scf_converger();
             update();
@@ -347,11 +322,11 @@ class UnRestrictedHartreeFock {
         iteration=0;
         extrap=0;
         eold=0.0;
-        dpm_update(xints);
+        update(&xints);
         double init_energy=energy+nucrep;
         while (iteration<maxits) {
             scf_converger();
-            dpm_update(xints);
+            update(&xints);
             if (is_converged()) break;
         }
         double final_energy=energy+nucrep;
@@ -383,11 +358,11 @@ class UnRestrictedHartreeFock {
             iteration=0;
             extrap=0;
             eold=0.0;
-            dpm_update(xints);
+            update(&xints);
             double init_energy=energy+nucrep;
             while (iteration<maxits) {
                 scf_converger();
-                dpm_update(xints);
+                update(&xints);
                 if (is_converged()) break;
             }
             final_energy=energy+nucrep;
@@ -587,8 +562,18 @@ class UnRestrictedHartreeFock {
     void scf_converger() {
         int i;
         double p00,p11,p01,beta;
-        if (scf_accel==1) {
-            if (extrap) {
+        if (ediff < 0.0) {
+            for (i=0;i<no2;++i) {
+                Pold2A[i] = PoldA[i];
+                PoldA[i] = PmatA[i];
+            }
+            for (i=0;i<no2;++i) {
+                Pold2B[i] = PoldB[i];
+                PoldB[i] = PmatB[i];
+            }
+            return;
+        }
+        if (scf_accel==1 && extrap) {
                 p00=p11=p01=0.0;
                 for (i=0; i<no2; ++i) {
                     double s0=PmatA[i]-PoldA[i];
@@ -599,7 +584,7 @@ class UnRestrictedHartreeFock {
                 }
                 beta=(p00-p01)/(p00-2.0*p01+p11);
                 if (beta<0.001) beta=0.001;
-                if (beta>1.500) beta=1.5;
+                if (beta>0.500) beta=0.5;
                 double betam1=1.0-beta;
                 for (i=0; i<no2; ++i) {
                     Pold2A[i]=PoldA[i];
@@ -616,35 +601,23 @@ class UnRestrictedHartreeFock {
                 }
                 beta=(p00-p01)/(p00-2.0*p01+p11);
                 if (beta<0.001) beta=0.001;
-                if (beta>1.500) beta=1.5;
+                if (beta>0.500) beta=0.5;
                 betam1=1.0-beta;
                 for (i=0; i<no2; ++i) {
                     Pold2B[i]=PoldB[i];
                     PoldB[i]=PmatB[i];
                     PmatB[i]=PoldB[i]*beta+Pold2B[i]*betam1;
                 }
-                return;
-            }
-            extrap=1;
-            for (i=0; i<no2; ++i) {
-                Pold2A[i]=PoldA[i];
-                PoldA[i]=PmatA[i];
-                PmatA[i]=(Pold2A[i]+PoldA[i])*0.5;
-            }
-            for (i=0; i<no2; ++i) {
-                Pold2B[i]=PoldB[i];
-                PoldB[i]=PmatB[i];
-                PmatB[i]=(Pold2B[i]+PoldB[i])*0.5;
-            }
-            return;
         } else {
             for (int i=0; i<no2; ++i) {
                 PmatA[i]=(PmatA[i]+PoldA[i])*0.5;
+            }
+            for (int i=0; i<no2; ++i) {
                 PmatB[i]=(PmatB[i]+PoldB[i])*0.5;
             }
-            return;
         }
     }
+
 
     void PopulationAnalysis(FILE *out) {
         const Center *center=basis.center_ptr();

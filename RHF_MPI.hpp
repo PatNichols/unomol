@@ -630,9 +630,15 @@ class RestrictedHartreeFockMPI {
     void
     scf_converger() {
         int i;
-        double p00,p11,p01,beta;
-        if (scf_accel==1) {
-            if (extrap) {
+        double p00,p11,p01,beta,betam1;
+        if (ediff < 0.0) {
+            for (i=0;i<no2;++i) {
+                Pold2[i] = Pold[i];
+                Pold[i] = Pmat[i];
+            }
+            return;
+        }
+        if (scf_accel==1 && extrap) {
                 p00=p11=p01=0.0;
                 for (i=0; i<no2; ++i) {
                     double s0=Pmat[i]-Pold[i];
@@ -643,26 +649,17 @@ class RestrictedHartreeFockMPI {
                 }
                 beta=(p00-p01)/(p00-2.0*p01+p11);
                 if (beta<0.001) beta=0.001;
-                if (beta>1.500) beta=1.5;
-                double betam1=1.0-beta;
+                if (beta>0.500) beta=0.5;
+                betam1=1.0-beta;
                 for (i=0; i<no2; ++i) {
                     Pold2[i]=Pold[i];
                     Pold[i]=Pmat[i];
                     Pmat[i]=Pold[i]*beta+Pold2[i]*betam1;
                 }
-                return;
-            }
-            extrap=1;
-            for (i=0; i<no2; ++i) {
-                Pold2[i]=Pold[i];
-                Pold[i]=Pmat[i];
-                Pmat[i]=(Pold2[i]+Pold[i])*0.5;
-            }
-            return;
         } else {
-            for (int i=0; i<no2; ++i)
+            for (int i=0; i<no2; ++i) {
                 Pmat[i]=(Pmat[i]+Pold[i])*0.5;
-            return;
+            }
         }
     }
 
