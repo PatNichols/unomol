@@ -475,7 +475,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
             double bxp=sq.al2[j];
             double pxp=axp+bxp;
             double abi=1.0/pxp;
-            double s12= c12 * exp(-axp*bxp*sq.ab2*abi);
+            double s12=std::exp(-axp*bxp*sq.ab2*abi);
             p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
             p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
             p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
@@ -493,11 +493,11 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                 }
                 for (int l=0; l<lend; ++l) {
                     if (k==l) f34=1.0;
-                    double s34=c3*f34*sq.co4[l];
+                    double c34=c3*f34*sq.co4[l];
                     double dxp=sq.al4[l];
                     double qxp=cxp+dxp;
                     double cdi=1.0/qxp;
-                    double s34=c34 * std::exp(-cxp*dxp*sq.cd2*cdi);
+                    double s34=std::exp(-cxp*dxp*sq.cd2*cdi);
                     double txp=pxp+qxp;
                     double sr=SRterm*s12*s34*abi*cdi/sqrt(txp);
                     if (sr<threshold) continue;
@@ -517,7 +517,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
                         int ils=key&UNO_MASK;
-                        double nfact=sr*
+                        double nfact=c12*c34*sr*
                                      aux.normalization_factor(sq.lv1,ils)*
                                      aux.normalization_factor(sq.lv2,jls)*
                                      aux.normalization_factor(sq.lv3,kls)*
@@ -535,6 +535,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
         }
     }
 }
+
 
 #endif
 
