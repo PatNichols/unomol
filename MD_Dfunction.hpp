@@ -70,6 +70,41 @@ class MD_Dfunction {
             }
         }
     }
+
+    constexpr void eval_one_cen(double abi,int l1,int l2) noexcept {
+        int ltot=l1+l2;
+        if (ltot==0) {
+            dtx[0][0][0]=1.0;
+            return;
+        }
+        for (int i=0; i<=l1; i++) {
+            for (int j=0; j<=l2; j++) {
+                for (int k=0; k<=ltot; k++) dtx[i][j][k]=0.0;
+            }
+        }
+        dtx[0][0][0]=1.0;
+        for (int i=1; i<=l2; i++) {
+            int im1=i-1;
+            dtx[0][i][0]=dtx[0][im1][1];
+            for (int n=1; n<i; n++) {
+                dtx[0][i][n]=abi*dtx[0][im1][n-1]+
+                             (n+1)*dtx[0][im1][n+1];
+            }
+            dtx[0][i][i]=abi*dtx[0][im1][im1];
+        }
+        for (int j=1; j<=l1; j++) {
+            for (int i=0; i<=l2; i++) {
+                int jm1=j-1;
+                int ipj=i+j;
+                dtx[j][i][0]=dtx[jm1][i][1];
+                for (int n=1; n<ipj; n++) {
+                    dtx[j][i][n]=abi*dtx[jm1][i][n-1]+
+                                 (n+1)*dtx[jm1][i][n+1];
+                }
+                dtx[j][i][ipj]=abi*dtx[jm1][i][ipj-1];
+            }
+        }
+    }
 };
 
 }

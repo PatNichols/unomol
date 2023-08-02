@@ -547,7 +547,7 @@ class RestrictedHartreeFock {
                 }
                 beta=(p00-p01)/(p00-2.0*p01+p11);
                 if (beta<0.001) beta=0.001;
-                if (beta>0.500) beta=0.5;
+                if (beta>0.600) beta=0.6;
                 double betam1=1.0-beta;
                 for (i=0; i<no2; ++i) {
                     Pold2[i]=Pold[i];

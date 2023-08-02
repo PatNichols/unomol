@@ -6,16 +6,289 @@ namespace unomol {
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
 
-
-//#define UNOMOL_MD_INTS
+#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
+
+void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
+                            const AuxFunctions& aux,
+                            MDInts& mds,
+                            TwoInts* sints) 
+{
+    const double SRterm= 34.9868366552497250;
+    const double threshold=1.e-12;
+    const int lvt12=sq.lv1+sq.lv2;
+    const int lvt34=sq.lv3+sq.lv4;
+    const int lvt=lvt12+lvt34;
+    MD_Dfunction& dx12 = mds.dx12;
+    MD_Dfunction& dx34 = mds.dx34;
+    MD_Rfunction& rfun = mds.rfun;
+//    double pq[3];
+//    pq[0] = pq[1] = pq[2] = 0.0;
+    for (int i=0; i<sq.npr1; ++i) {
+        double axp=sq.al1[i];
+        double c1=sq.co1[i];
+        double f12=1.0;
+        int jend=sq.npr2;
+        if (sq.al1==sq.al2) {
+            f12=2.0;
+            jend=i+1;
+        }
+        for (int j=0; j<jend; ++j) {
+            if (i==j) f12=1.0;
+            double s12=c1*f12*sq.co2[j];
+            double bxp=sq.al2[j];
+            double pxp=axp+bxp;
+            double abi=1.0/pxp;
+            abi *= 0.5;
+            dx12.eval_one_cen(abi,sq.lv1,sq.lv2);
+            for (int k=0; k<sq.npr3; ++k) {
+                double cxp=sq.al3[k];
+                double c3=sq.co3[k];
+                double f34=1.0;
+                int lend=sq.npr4;
+                if (sq.al3==sq.al4) {
+                    f34=2.0;
+                    lend=k+1;
+                }
+                for (int l=0; l<lend; ++l) {
+                    if (k==l) f34=1.0;
+                    double s34=c3*f34*sq.co4[l];
+                    double dxp=sq.al4[l];
+                    double qxp=cxp+dxp;
+                    double cdi=1.0/qxp;
+                    double txp=pxp+qxp;
+                    double sr= SRterm*s12*s34*2.*abi*cdi/sqrt(txp);
+                    cdi *= 0.5;
+                    dx34.eval_one_cen(cdi,sq.lv3,sq.lv4);
+                    double w = pxp * qxp / txp;
+                    rfun.eval_one_cen(sr,w,lvt);
+                    for (int kc=0; kc<sq.len; ++kc) {
+                        unsigned int key=sq.lstates[kc];
+                        unsigned int lls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int kls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int jls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int ils=key&UNO_MASK;
+                        const int *lvc1 = aux.l_vector(sq.lv1,ils);
+                        const int *lvc2 = aux.l_vector(sq.lv2,jls);
+                        const int *lvc3 = aux.l_vector(sq.lv3,kls);
+                        const int *lvc4 = aux.l_vector(sq.lv4,lls);
+
+                        int l1 = lvc1[0];
+                        int m1 = lvc1[1];
+                        int n1 = lvc1[2];
+
+                        int l2 = lvc2[0];
+                        int m2 = lvc2[1];
+                        int n2 = lvc2[2];
+
+                        int l12 = l1 + l2;
+                        int m12 = m1 + m2;
+                        int n12 = n1 + n2;
+
+                        int l3 = lvc3[0];
+                        int m3 = lvc3[1];
+                        int n3 = lvc3[2];
+
+                        int l4 = lvc4[0];
+                        int m4 = lvc4[1];
+                        int n4 = lvc4[2];
+
+                        int l34 = l3 + l4;
+                        int m34 = m3 + m4;
+                        int n34 = n3 + n4;
+
+                        double sum = 0;
+
+                        for (int ix12=0; ix12<=l12; ++ix12) {
+                            for (int iy12=0; iy12<=m12; ++iy12) {
+                                for (int iz12=0; iz12<=n12; ++iz12) {
+                                    double v12 =  dx12.getValue(l1,l2,ix12) *
+                                                  dx12.getValue(m1,m2,iy12) *
+                                                  dx12.getValue(n1,n2,iz12);
+                                    for (int ix34=0; ix34<=l34; ++ix34) {
+                                        for (int iy34=0; iy34<=m34; ++iy34) {
+                                            const double v34 = v12 * dx34.getValue(l3,l4,ix34) *
+                                                               dx34.getValue(m3,m4,iy34);
+                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz12;
+                                            const double *dzp = dx34.getRow(n3,n4);
+                                            int sx = ((ix34+iy34)%2) ? -1:1;
+                                            for (int iz34=0; iz34<=n34; ++iz34) {
+                                                sum += sx * v34 *
+                                                       dzp[iz34] *
+                                                       rzp[iz34];
+                                                sx = -sx;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        const double nfact=
+                            aux.normalization_factor(sq.lv1,ils)*
+                            aux.normalization_factor(sq.lv2,jls)*
+                            aux.normalization_factor(sq.lv3,kls)*
+                            aux.normalization_factor(sq.lv4,lls);
+                        (sints+kc)->val += sum * nfact;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
+                            const AuxFunctions& aux,
+                            MDInts& mds,
+                            TwoInts* sints) {
+    const double SRterm= 34.9868366552497250;
+    const double threshold=1.e-12;
+    const int lvt12=sq.lv1+sq.lv2;
+    const int lvt34=sq.lv3+sq.lv4;
+    const int lvt=lvt12+lvt34;
+    MD_Dfunction& dx12 = mds.dx12;
+    MD_Dfunction& dx34 = mds.dx34;
+    MD_Rfunction& rfun = mds.rfun;
+    double p[3];
+    p[0] = sq.a[0];
+    p[1] = sq.a[1];
+    p[2] = sq.a[2];
+    double q[3];
+    q[0] = sq.c[0];
+    q[1] = sq.c[1];
+    q[2] = sq.c[2];
+    double pq[3];
+    pq[0] = p[0]-q[0];
+    pq[1] = p[1]-q[1];
+    pq[2] = p[2]-q[2];
+    double pq2 = pq[0]*pq[0] + pq[1]*pq[1] + pq[2]*pq[2];
+    for (int i=0; i<sq.npr1; ++i) {
+        double axp=sq.al1[i];
+        double c1=sq.co1[i];
+        double f12=1.0;
+        int jend=sq.npr2;
+        if (sq.al1==sq.al2) {
+            f12=2.0;
+            jend=i+1;
+        }
+        for (int j=0; j<jend; ++j) {
+            if (i==j) f12=1.0;
+            double s12=c1*f12*sq.co2[j];
+            double bxp=sq.al2[j];
+            double pxp=axp+bxp;
+            double abi=1.0/pxp;
+            abi *= 0.5;
+            dx12.eval_one_cen(abi,sq.lv1,sq.lv2);
+            for (int k=0; k<sq.npr3; ++k) {
+                double cxp=sq.al3[k];
+                double c3=sq.co3[k];
+                double f34=1.0;
+                int lend=sq.npr4;
+                if (sq.al3==sq.al4) {
+                    f34=2.0;
+                    lend=k+1;
+                }
+                for (int l=0; l<lend; ++l) {
+                    if (k==l) f34=1.0;
+                    double s34=c3*f34*sq.co4[l];
+                    double dxp=sq.al4[l];
+                    double qxp=cxp+dxp;
+                    double cdi=1.0/qxp;
+                    double txp=pxp+qxp;
+                    double sr= SRterm*s12*s34*2.*abi*cdi/sqrt(txp);
+                    cdi *= 0.5;
+                    dx34.eval_one_cen(cdi,sq.lv3,sq.lv4);
+                    double w = pxp * qxp / txp;
+                    double t = w * pq2;
+                    rfun.eval(sr,t,w,pq,lvt);
+                    for (int kc=0; kc<sq.len; ++kc) {
+                        unsigned int key=sq.lstates[kc];
+                        unsigned int lls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int kls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int jls=key&UNO_MASK;
+                        key>>=UNO_SHIFT;
+                        unsigned int ils=key&UNO_MASK;
+                        const int *lvc1 = aux.l_vector(sq.lv1,ils);
+                        const int *lvc2 = aux.l_vector(sq.lv2,jls);
+                        const int *lvc3 = aux.l_vector(sq.lv3,kls);
+                        const int *lvc4 = aux.l_vector(sq.lv4,lls);
+
+                        int l1 = lvc1[0];
+                        int m1 = lvc1[1];
+                        int n1 = lvc1[2];
+
+                        int l2 = lvc2[0];
+                        int m2 = lvc2[1];
+                        int n2 = lvc2[2];
+
+                        int l12 = l1 + l2;
+                        int m12 = m1 + m2;
+                        int n12 = n1 + n2;
+
+                        int l3 = lvc3[0];
+                        int m3 = lvc3[1];
+                        int n3 = lvc3[2];
+
+                        int l4 = lvc4[0];
+                        int m4 = lvc4[1];
+                        int n4 = lvc4[2];
+
+                        int l34 = l3 + l4;
+                        int m34 = m3 + m4;
+                        int n34 = n3 + n4;
+
+                        double sum = 0;
+
+                        for (int ix12=0; ix12<=l12; ++ix12) {
+                            for (int iy12=0; iy12<=m12; ++iy12) {
+                                for (int iz12=0; iz12<=n12; ++iz12) {
+                                    double v12 =  dx12.getValue(l1,l2,ix12) *
+                                                  dx12.getValue(m1,m2,iy12) *
+                                                  dx12.getValue(n1,n2,iz12);
+                                    for (int ix34=0; ix34<=l34; ++ix34) {
+                                        for (int iy34=0; iy34<=m34; ++iy34) {
+                                            const double v34 = v12 * dx34.getValue(l3,l4,ix34) *
+                                                               dx34.getValue(m3,m4,iy34);
+                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz12;
+                                            const double *dzp = dx34.getRow(n3,n4);
+                                            int sx = ((ix34+iy34)%2) ? -1:1;
+                                            for (int iz34=0; iz34<=n34; ++iz34) {
+                                                sum += sx * v34 *
+                                                       dzp[iz34] *
+                                                       rzp[iz34];
+                                                sx = -sx;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        const double nfact=
+                            aux.normalization_factor(sq.lv1,ils)*
+                            aux.normalization_factor(sq.lv2,jls)*
+                            aux.normalization_factor(sq.lv3,kls)*
+                            aux.normalization_factor(sq.lv4,lls);
+
+                        (sints+kc)->val += sum * nfact;
+                    }
+                }
+            }
+        }
+    }
+}
 
 void calc_two_electron_ints(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             MDInts& mds,
                             TwoInts* sints) {
     double p[3],q[3],pq[3];
+    if ( sq.a == sq.b && sq.a == sq.c && sq.a == sq.d) return calc_two_electron_ints_one_cen(sq,aux,mds,sints);
+    if ( sq.a == sq.b && sq.c == sq.d) return calc_two_electron_ints_two_cen(sq,aux,mds,sints);
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
     const int lvt12=sq.lv1+sq.lv2;
@@ -97,11 +370,6 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         unsigned int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
                         unsigned int ils=key&UNO_MASK;
-                        const double nfact=
-                            aux.normalization_factor(sq.lv1,ils)*
-                            aux.normalization_factor(sq.lv2,jls)*
-                            aux.normalization_factor(sq.lv3,kls)*
-                            aux.normalization_factor(sq.lv4,lls);
                         const int *lvc1 = aux.l_vector(sq.lv1,ils);
                         const int *lvc2 = aux.l_vector(sq.lv2,jls);
                         const int *lvc3 = aux.l_vector(sq.lv3,kls);
@@ -157,6 +425,12 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                                 }
                             }
                         }
+                        const double nfact=
+                            aux.normalization_factor(sq.lv1,ils)*
+                            aux.normalization_factor(sq.lv2,jls)*
+                            aux.normalization_factor(sq.lv3,kls)*
+                            aux.normalization_factor(sq.lv4,lls);
+
                         (sints+kc)->val += sum * nfact;
                     }
                 }
@@ -201,7 +475,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
             double bxp=sq.al2[j];
             double pxp=axp+bxp;
             double abi=1.0/pxp;
-            double s12=std::exp(-axp*bxp*sq.ab2*abi);
+            double s12= c12 * exp(-axp*bxp*sq.ab2*abi);
             p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
             p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
             p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
@@ -219,11 +493,11 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                 }
                 for (int l=0; l<lend; ++l) {
                     if (k==l) f34=1.0;
-                    double c34=c3*f34*sq.co4[l];
+                    double s34=c3*f34*sq.co4[l];
                     double dxp=sq.al4[l];
                     double qxp=cxp+dxp;
                     double cdi=1.0/qxp;
-                    double s34=std::exp(-cxp*dxp*sq.cd2*cdi);
+                    double s34=c34 * std::exp(-cxp*dxp*sq.cd2*cdi);
                     double txp=pxp+qxp;
                     double sr=SRterm*s12*s34*abi*cdi/sqrt(txp);
                     if (sr<threshold) continue;
@@ -243,7 +517,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
                         int ils=key&UNO_MASK;
-                        double nfact=c12*c34*sr*
+                        double nfact=sr*
                                      aux.normalization_factor(sq.lv1,ils)*
                                      aux.normalization_factor(sq.lv2,jls)*
                                      aux.normalization_factor(sq.lv3,kls)*
@@ -399,7 +673,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                     if (!knt) continue;
                     ncalc += knt;
                     sq.len=knt;
-#ifdef UNOMOL_MD_INTS
+#ifdef UNOMOL_MD_INTS                    
                     calc_two_electron_ints(sq,aux,mds,sints);
 #else
                     calc_two_electron_ints(sq,aux,rys,sints);

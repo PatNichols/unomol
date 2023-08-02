@@ -12,19 +12,24 @@ namespace unomol {
 //  Ref: JCP 26,(218-231),1978
 /////////////////////////////////////////////////////////////
 class MD_Rfunction {
-  private:
+private:
     int lmax,asize;
     double*** r;
     double**** rz;
-  public:
+    double* dfact;
+public:
     MD_Rfunction(int maxl) {
         lmax=maxl;
         asize=4*maxl+1;
         r=new_tensor3<double>(asize,asize,asize);
         rz=new_tensor4<double>(asize,asize,asize,asize);
+        dfact = new double[(asize+1)];
+        dfact[0] = 1.0;
+        for (int i=1; i<=asize; ++i) dfact[i] = dfact[i-1] * ( i + i - 1);
     }
 
     ~MD_Rfunction() {
+        delete [] dfact;
         delete_tensor4<double>(rz,asize,asize,asize);
         delete_tensor3<double>(r,asize,asize);
         r=0;
@@ -42,17 +47,17 @@ class MD_Rfunction {
 
     /** find values for tensor */
     void eval(double sr,double t,double w,
-              double pq[],int ltot) noexcept {
-
+              double pq[],int ltot) noexcept
+    {
         int m;
         double term, sterm, x, y, z, x2, y2, z2;
         double x3, y3, z3, x4, y4, z4, x5, y5, z5, x6, y6, z6,
-                 x7, y7, z7, x8, y8, z8, x9, y9, z9, x10, y10, z10,
-                 x11, y11, z11, x12, y12, z12;
-        double * r0 = rz[0][0][0]; 
+               x7, y7, z7, x8, y8, z8, x9, y9, z9, x10, y10, z10,
+               x11, y11, z11, x12, y12, z12;
+        double * r0 = rz[0][0][0];
 
         Fgamma (r0, t, ltot);
-        term = -2.0 * w;
+        term = -(w+w);
         sterm = sr;
         for (m = 0; m <= ltot; ++m) {
             r0[m] = sterm * r0[m];
@@ -2197,119 +2202,154 @@ class MD_Rfunction {
         double twot=2.0*t;
         double expt=exp(-t);
         fm[m]=sum*expt;
-        for (int i=m-1; i>=0; i--) fm[i]=(fm[i+1]*twot+expt)/(2.0*i+1.0);
+        for (int i=m-1; i>=0; i--) fm[i]=(fm[i+1]*twot+expt)/(i+i+1.0);
     }
-    
+
     constexpr void loop_eval(const double *pq,int ltot)
     {
         // slower evaluation using loops and rz
-    const double x = pq[0];
-    const double y = pq[1];
-    const double z = pq[2];
-    // lz = 1
-    int m_max = ltot-1;
-    for (int m=0;m<=m_max;++m) { 
-        rz[0][0][1][m] = z * rz[0][0][0][m+1]; 
-    }
-    r[0][0][1] = rz[0][0][1][0];
-    // lz = 2
-    m_max = ltot-1;
-    for (int m=0;m<=m_max;++m) { 
-        rz[0][0][2][m] = z * rz[0][0][1][m+1] + rz[0][0][0][m+1]; 
-    }
-    r[0][0][2] = rz[0][0][2][0];
-    // lz > 2
-    for (int lz=3;lz<=ltot;++lz) {
-        int lzm1 = lz - 1;
-        int lzm2 = lz - 2;
-        m_max = ltot - lz;
-        for (int m=0;m<=m_max;++m) {
-            rz[0][0][lz][m] = z * rz[0][0][lzm1][m+1] + 
-                lzm1 * rz[0][0][lzm2][m+1];
+        const double x = pq[0];
+        const double y = pq[1];
+        const double z = pq[2];
+        // lz = 1
+        int m_max = ltot-1;
+        for (int m=0; m<=m_max; ++m) {
+            rz[0][0][1][m] = z * rz[0][0][0][m+1];
         }
-        r[0][0][lz] = rz[0][0][lz][0];
-    }   
-    // ly = 1
-    int lzend = ltot - 1;
-    for (int lz=0;lz<=lzend;++lz) {
-        m_max = lzend - lz;
-        for (int m=0;m<=m_max;++m) {
-            rz[0][1][lz][m] = y * rz[0][0][lz][m+1];
+        r[0][0][1] = rz[0][0][1][0];
+        // lz = 2
+        m_max = ltot-1;
+        for (int m=0; m<=m_max; ++m) {
+            rz[0][0][2][m] = z * rz[0][0][1][m+1] + rz[0][0][0][m+1];
         }
-        r[0][1][lz] = rz[0][1][lz][0];
-    }   
-    // ly = 2
-    lzend = ltot - 2;
-    for (int lz=0;lz<=lzend;++lz) {
-        m_max = ltot - lz;
-        for (int m=0;m<=m_max;++m) {
-            rz[0][2][lz][m] = y * rz[0][1][lz][m+1] + rz[0][0][lz][m+1];
-        }
-        r[0][2][lz] = rz[0][2][lz][0];
-    }       
-    // ly > 2
-    for (int ly=3;ly<=ltot;++ly) {
-        lzend = ltot - ly;
-        for (int lz=0;lz<=lzend;++lz) {
-            int lym1 = ly - 1;
-            int lym2 = ly - 2;
-            m_max = lzend - lz;
-            for (int m=0;m<=m_max;++m) {
-                rz[0][ly][lz][m+1] =
-                    y * rz[0][lym1][lz][m+1] +
-                    lym1 * rz[0][lym2][lz][m+1];
+        r[0][0][2] = rz[0][0][2][0];
+        // lz > 2
+        for (int lz=3; lz<=ltot; ++lz) {
+            int lzm1 = lz - 1;
+            int lzm2 = lz - 2;
+            m_max = ltot - lz;
+            for (int m=0; m<=m_max; ++m) {
+                rz[0][0][lz][m] = z * rz[0][0][lzm1][m+1] +
+                                  lzm1 * rz[0][0][lzm2][m+1];
             }
-            r[0][ly][lz] = rz[0][ly][lz][0];
+            r[0][0][lz] = rz[0][0][lz][0];
         }
-    }   
-    // lx = 1;
-    int lyend = ltot - 1;
-    for (int ly=0;ly<=lyend;++ly) {
-        lzend = lyend - ly;
-        for (int lz=0;lz<=lzend;++lz) {
+        // ly = 1
+        int lzend = ltot - 1;
+        for (int lz=0; lz<=lzend; ++lz) {
             m_max = lzend - lz;
-            for (int m=0;m<=m_max;++m) {
-                rz[1][ly][lz][m+1] =
-                    x * rz[0][ly][lz][m+1];
+            for (int m=0; m<=m_max; ++m) {
+                rz[0][1][lz][m] = y * rz[0][0][lz][m+1];
             }
-            r[1][ly][lz] = rz[1][ly][lz][0];
+            r[0][1][lz] = rz[0][1][lz][0];
         }
-    }   
-    // lx = 2;
-    lyend = ltot - 2;
-    for (int ly=0;ly<=lyend;++ly) {
-        lzend = lyend - ly;
-        for (int lz=0;lz<=lzend;++lz) {
-            m_max = lzend - lz;
-            for (int m=0;m<=m_max;++m) {
-                rz[2][ly][lz][m+1] =
-                    x * rz[1][ly][lz][m+1] +
-                    rz[0][ly][lz][m+1];
+        // ly = 2
+        lzend = ltot - 2;
+        for (int lz=0; lz<=lzend; ++lz) {
+            m_max = ltot - lz;
+            for (int m=0; m<=m_max; ++m) {
+                rz[0][2][lz][m] = y * rz[0][1][lz][m+1] + rz[0][0][lz][m+1];
             }
-            r[2][ly][lz] = rz[2][ly][lz][0];
+            r[0][2][lz] = rz[0][2][lz][0];
         }
-    }   
-    // lx > 2
-    for (int lx=3;lx<=ltot;++lx) {
-        lyend = ltot - lx;
-        int lxm1 = lx - 1;
-        int lxm2 = lx - 2;
-        for (int ly=0;ly<=lyend;++ly) {
-            lzend = lyend - ly;
-            for (int lz = 0; lz<=lzend;++lz) {
+        // ly > 2
+        for (int ly=3; ly<=ltot; ++ly) {
+            lzend = ltot - ly;
+            for (int lz=0; lz<=lzend; ++lz) {
+                int lym1 = ly - 1;
+                int lym2 = ly - 2;
                 m_max = lzend - lz;
-                for (int m=0;m<=m_max;++m) {
-                    rz[lx][ly][lz][m] =
-                        x * rz[lxm1][ly][lz][m+1] +
-                        lxm1 * rz[lxm2][ly][lz][m+1];
-                
+                for (int m=0; m<=m_max; ++m) {
+                    rz[0][ly][lz][m+1] =
+                        y * rz[0][lym1][lz][m+1] +
+                        lym1 * rz[0][lym2][lz][m+1];
                 }
-                r[lx][ly][lz] = rz[lx][ly][lz][0];
+                r[0][ly][lz] = rz[0][ly][lz][0];
             }
         }
-    }  
+        // lx = 1;
+        int lyend = ltot - 1;
+        for (int ly=0; ly<=lyend; ++ly) {
+            lzend = lyend - ly;
+            for (int lz=0; lz<=lzend; ++lz) {
+                m_max = lzend - lz;
+                for (int m=0; m<=m_max; ++m) {
+                    rz[1][ly][lz][m+1] =
+                        x * rz[0][ly][lz][m+1];
+                }
+                r[1][ly][lz] = rz[1][ly][lz][0];
+            }
+        }
+        // lx = 2;
+        lyend = ltot - 2;
+        for (int ly=0; ly<=lyend; ++ly) {
+            lzend = lyend - ly;
+            for (int lz=0; lz<=lzend; ++lz) {
+                m_max = lzend - lz;
+                for (int m=0; m<=m_max; ++m) {
+                    rz[2][ly][lz][m+1] =
+                        x * rz[1][ly][lz][m+1] +
+                        rz[0][ly][lz][m+1];
+                }
+                r[2][ly][lz] = rz[2][ly][lz][0];
+            }
+        }
+        // lx > 2
+        for (int lx=3; lx<=ltot; ++lx) {
+            lyend = ltot - lx;
+            int lxm1 = lx - 1;
+            int lxm2 = lx - 2;
+            for (int ly=0; ly<=lyend; ++ly) {
+                lzend = lyend - ly;
+                for (int lz = 0; lz<=lzend; ++lz) {
+                    m_max = lzend - lz;
+                    for (int m=0; m<=m_max; ++m) {
+                        rz[lx][ly][lz][m] =
+                            x * rz[lxm1][ly][lz][m+1] +
+                            lxm1 * rz[lxm2][ly][lz][m+1];
+
+                    }
+                    r[lx][ly][lz] = rz[lx][ly][lz][0];
+                }
+            }
+        }
+    }
+
+    void eval_one_cen(double sr,double w,int ltot) noexcept {
+
+        double *r0 = rz[0][0][0];
+        for (int l=0; l<=ltot; ++l) r0[l] = 0.5/(0.5 + l);
+        double sterm = sr;
+        double wterm = -(w+w);
+        for (int lx=0; lx<=ltot; ++lx) {
+            r0[lx] *= sterm;
+            sterm *= wterm;
+        }
+        for (int lx=0; lx<=ltot; ++lx) {
+            int lyend = ltot - lx;
+            for (int ly=0; ly<=lyend; ++ly) {
+                int lzend = lyend - ly;
+                for (int lz=0; lz<=lzend; ++lz) {
+                    r[lx][ly][lz] = 0.0;
+                }
+            }
+        }
+        for (int lx=0; lx<=ltot; lx+=2) {
+            int lyend = ltot - lx;
+            int lxh = lx >> 1;
+            double dx = dfact[lxh];
+            for (int ly=0; ly<=lyend; ly+=2) {
+                int lzend = lyend - ly;
+                int lyh = ly >> 1;
+                double dxy = dfact[lyh] * dx;
+                for (int lz=0; lz<=lzend; lz+=2) {
+                    int lzh = lz >> 1;
+                    int index = lxh + lyh + lzh;
+                    r[lx][ly][lz] = dxy * dfact[lzh] * r0[index];
+                }
+            }
+        }
     }
 };
 }
 #endif
-        
