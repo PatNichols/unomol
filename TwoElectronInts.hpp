@@ -75,7 +75,7 @@ class TwoElectronInts {
 
     TwoElectronInts(const Basis& basis,
                                  int start_shell,const string& base_str):
-        start(start_shell),rank(0),psize(1),cache(base_str,128L*1048576L)
+        start(start_shell),rank(0),psize(1),cache(base_str,8192L*1048576L)
     {
         calculate(basis);
     }

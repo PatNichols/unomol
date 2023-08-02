@@ -6,7 +6,7 @@ namespace unomol {
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
 
-#define UNOMOL_MD_INTS
+//#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
 
