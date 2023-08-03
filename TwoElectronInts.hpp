@@ -40,18 +40,25 @@ struct ShellQuartet {
     int npr4,lv4;
     const double *al4;
     const double *co4;
+    double * norms;
     unsigned int *lstates;
-    unsigned int len;
-
+    unsigned int maxints;
+    int len;
+    
     ShellQuartet(int maxl) {
         int maxlst = ((maxl+1)*(maxl+2))/2;
-        int maxints = maxlst * maxlst * maxlst * maxlst;
+        maxints = maxlst * maxlst * maxlst * maxlst;
+        norms = new double[maxints];
         lstates = new unsigned int[maxints];
+//        for (int i=0;i<maxints;++i) lstates[i] = new unsigned int[4];
+        len = 0;
     }
 
     ~ShellQuartet() {
         delete [] lstates;
+        delete [] norms;
     }
+      
 };
 
 
