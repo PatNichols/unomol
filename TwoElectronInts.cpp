@@ -475,7 +475,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
             double bxp=sq.al2[j];
             double pxp=axp+bxp;
             double abi=1.0/pxp;
-            double s12=std::exp(-axp*bxp*sq.ab2*abi);
+            double s12= std::exp(-axp*bxp*sq.ab2*abi);
             p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
             p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
             p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
@@ -497,10 +497,11 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     double dxp=sq.al4[l];
                     double qxp=cxp+dxp;
                     double cdi=1.0/qxp;
-                    double s34=std::exp(-cxp*dxp*sq.cd2*cdi);
+                    double s34= std::exp(-cxp*dxp*sq.cd2*cdi);
                     double txp=pxp+qxp;
                     double sr=SRterm*s12*s34*abi*cdi/sqrt(txp);
                     if (sr<threshold) continue;
+                    sr *= c12 * c34;
                     q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
                     q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
@@ -517,7 +518,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
                         int ils=key&UNO_MASK;
-                        double nfact=c12*c34*sr*
+                        double nfact=sr*
                                      aux.normalization_factor(sq.lv1,ils)*
                                      aux.normalization_factor(sq.lv2,jls)*
                                      aux.normalization_factor(sq.lv3,kls)*
@@ -579,6 +580,7 @@ TwoElectronInts::calculate(const Basis& basis) {
         sq.co1=(shell+ish)->cof_ptr();
         sq.a=(center+cen1)->r_vec();
         int nls1=aux.number_of_lstates(sq.lv1);
+        int lv1 = sq.lv1;
         for (int jsh=0; jsh<=ish; ++jsh) {
             int jr0 = basis.offset(jsh);
             sq.npr2=(shell+jsh)->number_of_prims();
@@ -589,6 +591,7 @@ TwoElectronInts::calculate(const Basis& basis) {
             sq.b=(center+cen2)->r_vec();
             sq.ab2=dist_sqr(sq.a,sq.b);
             int nls2=aux.number_of_lstates(sq.lv2);
+            int lv2 = sq.lv2;
             bool switch12=sq.lv1<sq.lv2;
             if (switch12) {
                 it=sq.npr1;
@@ -616,6 +619,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                 sq.co3=(shell+ksh)->cof_ptr();
                 sq.c=(center+cen3)->r_vec();
                 int nls3=aux.number_of_lstates(sq.lv3);
+                int lv3 = sq.lv3;
                 for (int lsh=0; lsh<=ksh; ++lsh) {
                     int lr0 = basis.offset(lsh);
                     sq.npr4=(shell+lsh)->number_of_prims();
@@ -626,6 +630,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                     sq.d=(center+cen4)->r_vec();
                     sq.cd2=dist_sqr(sq.c,sq.d);
                     int nls4=aux.number_of_lstates(sq.lv4);
+                    int lv4 = sq.lv4;
                     bool switch34=sq.lv3<sq.lv4;
                     if (switch34) {
                         it=sq.npr3;
@@ -666,6 +671,11 @@ TwoElectronInts::calculate(const Basis& basis) {
                                     unsigned int l34=(kls<<UNO_SHIFT)+lls;
                                     if (switch34) l34=(lls<<UNO_SHIFT)+kls;
                                     sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
+                                    sq.norms[knt] =
+                                         aux.normalization_factor(lv1,ils)*
+                                         aux.normalization_factor(lv2,jls)*
+                                         aux.normalization_factor(lv3,kls)*
+                                         aux.normalization_factor(lv4,lls);                     
                                     ++knt;
                                 }
                             }
