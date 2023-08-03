@@ -127,12 +127,7 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
                                 }
                             }
                         }
-                        const double nfact=
-                            aux.normalization_factor(sq.lv1,ils)*
-                            aux.normalization_factor(sq.lv2,jls)*
-                            aux.normalization_factor(sq.lv3,kls)*
-                            aux.normalization_factor(sq.lv4,lls);
-                        (sints+kc)->val += sum * nfact;
+                        (sints+kc)->val += sum * sq.norms[kc];
                     }
                 }
             }
@@ -268,13 +263,7 @@ void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
                                 }
                             }
                         }
-                        const double nfact=
-                            aux.normalization_factor(sq.lv1,ils)*
-                            aux.normalization_factor(sq.lv2,jls)*
-                            aux.normalization_factor(sq.lv3,kls)*
-                            aux.normalization_factor(sq.lv4,lls);
-
-                        (sints+kc)->val += sum * nfact;
+                        (sints+kc)->val += sum * sq.norms[kc];
                     }
                 }
             }
@@ -425,13 +414,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                                 }
                             }
                         }
-                        const double nfact=
-                            aux.normalization_factor(sq.lv1,ils)*
-                            aux.normalization_factor(sq.lv2,jls)*
-                            aux.normalization_factor(sq.lv3,kls)*
-                            aux.normalization_factor(sq.lv4,lls);
-
-                        (sints+kc)->val += sum * nfact;
+                        (sints+kc)->val += sum * sq.norms[kc];
                     }
                 }
             }
@@ -518,25 +501,19 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
                         int ils=key&UNO_MASK;
-                        double nfact=sr*
-                                     aux.normalization_factor(sq.lv1,ils)*
-                                     aux.normalization_factor(sq.lv2,jls)*
-                                     aux.normalization_factor(sq.lv3,kls)*
-                                     aux.normalization_factor(sq.lv4,lls);
                         const int *lv1 = aux.l_vector(sq.lv1,ils);
                         const int *lv2 = aux.l_vector(sq.lv2,jls);
                         const int *lv3 = aux.l_vector(sq.lv3,kls);
                         const int *lv4 = aux.l_vector(sq.lv4,lls);
                         double sum=
                             rys.Shift(ab,cd,lv1,lv2,lv3,lv4,nroots);
-                        (sints+kc)->val+=sum*nfact;
+                        (sints+kc)->val+=sum*sr*sq.norms[kc];
                     }
                 }
             }
         }
     }
 }
-
 
 #endif
 
