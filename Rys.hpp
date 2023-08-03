@@ -176,27 +176,7 @@ class Rys {
         const double *bnj = binomial[l2];
         const double *bnl = binomial[l4];
         double sum{0.0};
-/*
-        if (fabs(cdx) < 1.e-14) {
-            if (fabs(abx) < 1.e-14) {
-                return G[l12][l34];
-            }
-            double x12t{1.};
-            for (int i=0; i<=l2; ++i) {
-                sum += bnj[i] * x12t * G[l12-i][l34];
-                x12t *= abx;
-            }
-            return sum;
-        }
-        if (fabs(abx) < 1.-14) {
-            double x34t{1.0};
-            for (int j=0; j<=l4; ++j) {
-                sum += bnl[j] * x34t * G[l12][l34-j];
-                x34t *= cdx;
-            }
-            return sum;
-        }
-*/        
+
         double x12t{1.0};
         for (int i=0; i<=l2; ++i) {
             double x34t = bnj[i]*x12t;
