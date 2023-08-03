@@ -86,18 +86,18 @@ class Rys {
         const int * lv3,const int *lv4,
         const int nroots
     ) const noexcept {
-        int l2 = lv2[0];
-        int m2 = lv2[1];
-        int n2 = lv2[2];
-        int l12 = lv1[0] + l2;
-        int m12 = lv1[1] + m2;
-        int n12 = lv1[2] + n2;
-        int l4 = lv4[0];
-        int m4 = lv4[1];
-        int n4 = lv4[2];
-        int l34 = lv3[0] + l4;
-        int m34 = lv3[1] + m4;
-        int n34 = lv3[2] + n4;
+        const int l2 = lv2[0];
+        const int m2 = lv2[1];
+        const int n2 = lv2[2];
+        const int l12 = lv1[0] + l2;
+        const int m12 = lv1[1] + m2;
+        const int n12 = lv1[2] + n2;
+        const int l4 = lv4[0];
+        const int m4 = lv4[1];
+        const int n4 = lv4[2];
+        const int l34 = lv3[0] + l4;
+        const int m34 = lv3[1] + m4;
+        const int n34 = lv3[2] + n4;
         double sum{0.};
         for (int ir=0; ir<nroots; ++ir) {
             double xs = ShiftKernel(Gx[ir],ab[0],cd[0],l12,l2,l34,l4);
