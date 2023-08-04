@@ -28,8 +28,14 @@ FILE* create_file(const char* name) {
 
 void make_filename(int fileno,int rank,const char* base,
                    char* filename) {
-    char prefix[12];
-    sprintf(filename,"%04d_%03d_%s",fileno,rank,base);
+//    char prefix[12];
+//    sprintf(filename,"%04d_%03d_%s",fileno,rank,base);
+    std::ostringstream out;
+    out << std::setw(4) << std::setfill('0') << fileno;
+    out << "_" << std::setw(3) << rank << "_";
+    std::string name = out.str();
+    name += std::string(base);
+    memcpy(filename,name.c_str(),name.size());
 }
 
 void

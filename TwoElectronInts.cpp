@@ -734,8 +734,10 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
                     jl=l*(l+1)/2+j;
                 }
             }
-            double da=val*2.0*Pmat[ij];
-            double db=val*2.0*Pmat[kl];
+            double da=val*Pmat[ij];
+            da = da + da;
+            double db=val*Pmat[kl];
+            db = db + db;
             double sjl=val*Pmat[ik];
             double sjk=val*Pmat[il];
             double sik=val*Pmat[jl];

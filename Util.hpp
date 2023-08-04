@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
+#include <iomanip>
 using namespace std;
 
 namespace unomol {
