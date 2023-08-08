@@ -1,5 +1,8 @@
-CFLAGS=-g -O2 -fPIC -ffast-math -mtune=native -mavx --std=c99
-CXXFLAGS=-g -O2 -fPIC -ffast-math -mtune=native --std=c++17 -mavx2  
+CFLAGS= -g -O2 -ffast-math -mtune=native -mavx2 --std=c99 
+CXXFLAGS= -g -O2 -ffast-math -mtune=native --std=c++17 -mavx2  
+
+#CXXFLAGS=-g -O1 -fPIC -fsanitize=address --std=c++17
+#CFLAGS=-g -O1 -fPIC -fsanitize=address
 
 SER_FILES= putils_c.o Util.o SymmPack.o Rys.o Moments.o OneElectronInts.o FField.o TwoElectronInts.o GDPMInts.o Unomol.o
 

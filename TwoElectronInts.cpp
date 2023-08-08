@@ -2,10 +2,6 @@
 
 namespace unomol {
 
-#define UNO_MASK 0xF
-#define UNO_SHIFT 4U
-#define UNO_SHIFT2 8U
-
 //#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
@@ -500,7 +496,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         key>>=UNO_SHIFT;
                         int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
-                        int ils=key&UNO_MASK;
+                        int ils=key&UNO_SHIFT;
                         const int *lv1 = aux.l_vector(sq.lv1,ils);
                         const int *lv2 = aux.l_vector(sq.lv2,jls);
                         const int *lv3 = aux.l_vector(sq.lv3,kls);
@@ -521,6 +517,8 @@ void
 TwoElectronInts::calculate(const Basis& basis) {
     const double threshold=1.e-14;
     int pknt=0;
+    int64_t nwrite = 0;
+    int64_t ncalc = 0;
     const Shell* shell(basis.shell_ptr());
     const Center* center(basis.center_ptr());
     const AuxFunctions& aux(*basis.auxfun_ptr());
@@ -529,12 +527,7 @@ TwoElectronInts::calculate(const Basis& basis) {
     const int maxlst=aux.maxLstates();
     int ml2=maxlst*maxlst;
     int ml4=ml2*ml2;
-    int ir0=(0);
-    int nls1=(0);
-    for (int i=0; i<start; ++i,ir0+=nls1) {
-        int lv1=(shell+i)->Lvalue();
-        nls1=aux.number_of_lstates(lv1);
-    }
+    int offs[4];
 #ifdef UNOMOL_MD_INTS
     MDInts mds(maxl);
 #else
@@ -542,125 +535,30 @@ TwoElectronInts::calculate(const Basis& basis) {
 #endif
     ShellQuartet sq(maxl);
     TwoInts* sints=new TwoInts[ml4];
-    int it;
-    const double *dp;
     cache.open_for_writing();
     putils::Stopwatch timer;
     timer.start();
-    int ncalc = 0;
     for (int ish=start; ish<nshell; ++ish) {
-        int ir0 = basis.offset(ish);
-        sq.npr1=(shell+ish)->number_of_prims();
-        sq.lv1=(shell+ish)->Lvalue();
+        offs[0] = basis.offset(ish);
         int cen1=(shell+ish)->center();
-        sq.al1=(shell+ish)->alf_ptr();
-        sq.co1=(shell+ish)->cof_ptr();
-        sq.a=(center+cen1)->r_vec();
-        int nls1=aux.number_of_lstates(sq.lv1);
-        int lv1 = sq.lv1;
+        sq.assign_one(shell[ish],center[cen1].r_vec());
         for (int jsh=0; jsh<=ish; ++jsh) {
-            int jr0 = basis.offset(jsh);
-            sq.npr2=(shell+jsh)->number_of_prims();
-            sq.lv2=(shell+jsh)->Lvalue();
+            offs[1] = basis.offset(jsh);
             int cen2=(shell+jsh)->center();
-            sq.al2=(shell+jsh)->alf_ptr();
-            sq.co2=(shell+jsh)->cof_ptr();
-            sq.b=(center+cen2)->r_vec();
-            sq.ab2=dist_sqr(sq.a,sq.b);
-            int nls2=aux.number_of_lstates(sq.lv2);
-            int lv2 = sq.lv2;
-            bool switch12=sq.lv1<sq.lv2;
-            if (switch12) {
-                it=sq.npr1;
-                sq.npr1=sq.npr2;
-                sq.npr2=it;
-                it=sq.lv1;
-                sq.lv1=sq.lv2;
-                sq.lv2=it;
-                dp=sq.al1;
-                sq.al1=sq.al2;
-                sq.al2=dp;
-                dp=sq.co1;
-                sq.co1=sq.co2;
-                sq.co2=dp;
-                dp=sq.a;
-                sq.a=sq.b;
-                sq.b=dp;
-            }
+            sq.assign_two(shell[jsh],center[cen2].r_vec());
+            sq.swap_12();
             for (int ksh=0; ksh<=ish; ++ksh) {
-                int kr0 = basis.offset(ksh);
-                sq.npr3=(shell+ksh)->number_of_prims();
-                sq.lv3=(shell+ksh)->Lvalue();
+                offs[2] = basis.offset(ksh);
                 int cen3=(shell+ksh)->center();
-                sq.al3=(shell+ksh)->alf_ptr();
-                sq.co3=(shell+ksh)->cof_ptr();
-                sq.c=(center+cen3)->r_vec();
-                int nls3=aux.number_of_lstates(sq.lv3);
-                int lv3 = sq.lv3;
+                sq.assign_three(shell[ksh],center[cen3].r_vec());
                 for (int lsh=0; lsh<=ksh; ++lsh) {
-                    int lr0 = basis.offset(lsh);
-                    sq.npr4=(shell+lsh)->number_of_prims();
-                    sq.lv4=(shell+lsh)->Lvalue();
+                    offs[3] = basis.offset(lsh);
                     int cen4=(shell+lsh)->center();
-                    sq.al4=(shell+lsh)->alf_ptr();
-                    sq.co4=(shell+lsh)->cof_ptr();
-                    sq.d=(center+cen4)->r_vec();
-                    sq.cd2=dist_sqr(sq.c,sq.d);
-                    int nls4=aux.number_of_lstates(sq.lv4);
-                    int lv4 = sq.lv4;
-                    bool switch34=sq.lv3<sq.lv4;
-                    if (switch34) {
-                        it=sq.npr3;
-                        sq.npr3=sq.npr4;
-                        sq.npr4=it;
-                        it=sq.lv3;
-                        sq.lv3=sq.lv4;
-                        sq.lv4=it;
-                        dp=sq.al3;
-                        sq.al3=sq.al4;
-                        sq.al4=dp;
-                        dp=sq.co3;
-                        sq.co3=sq.co4;
-                        sq.co4=dp;
-                        dp=sq.c;
-                        sq.c=sq.d;
-                        sq.d=dp;
-                    }
-                    int knt=0;
-                    for (int ils=0; ils<nls1;++ils) {
-                        int ir = ir0 + ils;
-                        for (int jls=0; jls<nls2;++jls) {
-                            int jr = jr0 + jls;
-                            if ( jr > ir ) break;
-                            for (int kls=0; kls<nls3;++kls) {
-                                int kr = kr0 + kls;
-                                if ( kr > ir) break;
-                                for (int lls=0; lls<nls4;++lls) {
-                                    int lr = lr0 + lls;
-                                    if ( lr > kr || ( ir == kr && lr > jr) ) break;
-                                    (sints+knt)->val=0.0;
-                                    (sints+knt)->i=(unsigned int)ir;
-                                    (sints+knt)->j=(unsigned int)jr;
-                                    (sints+knt)->k=(unsigned int)kr;
-                                    (sints+knt)->l=(unsigned int)lr;
-                                    unsigned int l12 = (ils<<UNO_SHIFT) + jls;
-                                    if (switch12) l12=(jls<<UNO_SHIFT)+ils;
-                                    unsigned int l34=(kls<<UNO_SHIFT)+lls;
-                                    if (switch34) l34=(lls<<UNO_SHIFT)+kls;
-                                    sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
-                                    sq.norms[knt] =
-                                         aux.normalization_factor(lv1,ils)*
-                                         aux.normalization_factor(lv2,jls)*
-                                         aux.normalization_factor(lv3,kls)*
-                                         aux.normalization_factor(lv4,lls);                     
-                                    ++knt;
-                                }
-                            }
-                        }
-                    }
+                    sq.assign_four(shell[lsh],center[cen4].r_vec());
+                    sq.swap_34();
+                    int knt = sq.precalculate(aux,offs,sints);
                     if (!knt) continue;
                     ncalc += knt;
-                    sq.len=knt;
 #ifdef UNOMOL_MD_INTS                    
                     calc_two_electron_ints(sq,aux,mds,sints);
 #else
@@ -671,22 +569,10 @@ TwoElectronInts::calculate(const Basis& basis) {
                             cache.write(sints+kc,1);
                         }
                     }
-                    if (switch34) {
-                        sq.npr3=sq.npr4;
-                        sq.lv3=sq.lv4;
-                        sq.al3=sq.al4;
-                        sq.co3=sq.co4;
-                        sq.c=sq.d;
-                    }
+                    sq.unswap_34();
                 }
             }
-            if (switch12) {
-                sq.npr1=sq.npr2;
-                sq.lv1=sq.lv2;
-                sq.al1=sq.al2;
-                sq.co1=sq.co2;
-                sq.a=sq.b;
-            }
+            sq.unswap_12();
         }
     }
     timer.stop();
