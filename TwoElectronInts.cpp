@@ -548,66 +548,37 @@ TwoElectronInts::calculate(const Basis& basis) {
     putils::Stopwatch timer;
     timer.start();
     int ncalc = 0;
+    int offs[4];
+    int nls[4];
+    int lvs[4];
     for (int ish=start; ish<nshell; ++ish) {
-        int ir0 = basis.offset(ish);
+        offs[0] = basis.offset(ish);
         int cen1=(shell+ish)->center();
         sq.assign_one(shell[ish],(center+cen1)->r_vec());
-        int nls1=aux.number_of_lstates(sq.lv1);
-        int lv1 = sq.lv1;
+        nls[0] =aux.number_of_lstates(sq.lv1);
+        lvs[0] = sq.lv1;
         for (int jsh=0; jsh<=ish; ++jsh) {
-            int jr0 = basis.offset(jsh);
+            offs[1] = basis.offset(jsh);
             int cen2=(shell+jsh)->center();
             sq.assign_two(shell[jsh],(center+cen2)->r_vec());
-            int nls2=aux.number_of_lstates(sq.lv2);
-            int lv2 = sq.lv2;
+            nls[1] = aux.number_of_lstates(sq.lv2);
+            lvs[1] = sq.lv2;
             sq.swap_12();
-            bool switch12= sq.sw12;
             for (int ksh=0; ksh<=ish; ++ksh) {
-                int kr0 = basis.offset(ksh);
+                offs[2] = basis.offset(ksh);
                 int cen3=(shell+ksh)->center();
                 sq.assign_three(shell[ksh],(center+cen3)->r_vec());
-                int nls3=aux.number_of_lstates(sq.lv3);
-                int lv3 = sq.lv3;
+                nls[2]=aux.number_of_lstates(sq.lv3);
+                lvs[2] = sq.lv3;
                 for (int lsh=0; lsh<=ksh; ++lsh) {
-                    int lr0 = basis.offset(lsh);
+                    offs[3] = basis.offset(lsh);
                     int cen4=(shell+lsh)->center();
                     sq.assign_four(shell[lsh],(center+cen4)->r_vec());
-                    int nls4=aux.number_of_lstates(sq.lv4);
-                    int lv4 = sq.lv4;
+                    nls[3]= aux.number_of_lstates(sq.lv4);
+                    lvs[3] = sq.lv4;
                     sq.swap_34();
-                    bool switch34 = sq.sw34;
-                    int knt=0;
-                    for (int ils=0; ils<nls1;++ils) {
-                        int ir = ir0 + ils;
-                        for (int jls=0; jls<nls2;++jls) {
-                            int jr = jr0 + jls;
-                            if ( jr > ir ) break;
-                            for (int kls=0; kls<nls3;++kls) {
-                                int kr = kr0 + kls;
-                                if ( kr > ir) break;
-                                for (int lls=0; lls<nls4;++lls) {
-                                    int lr = lr0 + lls;
-                                    if ( lr > kr || ( ir == kr && lr > jr) ) break;
-                                    (sints+knt)->val=0.0;
-                                    (sints+knt)->i=(unsigned int)ir;
-                                    (sints+knt)->j=(unsigned int)jr;
-                                    (sints+knt)->k=(unsigned int)kr;
-                                    (sints+knt)->l=(unsigned int)lr;
-                                    unsigned int l12 = (ils<<UNO_SHIFT) + jls;
-                                    if (switch12) l12=(jls<<UNO_SHIFT)+ils;
-                                    unsigned int l34=(kls<<UNO_SHIFT)+lls;
-                                    if (switch34) l34=(lls<<UNO_SHIFT)+kls;
-                                    sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
-                                    sq.norms[knt] =
-                                         aux.normalization_factor(lv1,ils)*
-                                         aux.normalization_factor(lv2,jls)*
-                                         aux.normalization_factor(lv3,kls)*
-                                         aux.normalization_factor(lv4,lls);                     
-                                    ++knt;
-                                }
-                            }
-                        }
-                    }
+                    int knt= sq.precalculate(offs,nls,lvs,
+                            aux,sints);
                     if (!knt) continue;
                     ncalc += knt;
                     sq.len=knt;

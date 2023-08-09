@@ -185,69 +185,57 @@ struct ShellQuartet {
       }
     } 
 
-    int precalculate(const AuxFunctions& aux,const int offs[],TwoInts *sints)
+   int precalculate(const int *offs,const int *nls,const int *lvs,
+            const AuxFunctions& aux,
+            TwoInts * sints)
     {
-         int lv1_,lv2_,lv3_,lv4_;
-         int lsh12,lsh34;
-         if ( sw12 ) {
-              lv1_ = lv2;
-              lv2_ = lv1; 
-         } else {
-              lv1_ = lv1;
-              lv2_ = lv2;         
-         }
-         if ( sw34 ) {  
-              lv3_ = lv4;
-              lv4_ = lv3; 
-         } else {
-              lv3_ = lv3;
-              lv4_ = lv4;         
-         }
-         int nls1 = aux.number_of_lstates(lv1);
-         int nls2 = aux.number_of_lstates(lv2);
-         int nls3 = aux.number_of_lstates(lv3);
-         int nls4 = aux.number_of_lstates(lv4);
-         len = 0;
-         for (int ls1=0;ls1<nls1;++ls1) {
-              double d1 = aux.normalization_factor(lv1_,ls1);
-              int ir = offs[0] + ls1;
-              for (int ls2 = 0; ls2 < nls2; ++ls2) {
-                 double d12 = d1 * aux.normalization_factor(lv2_,ls2);
-                 int jr = offs[1] + ls2;
-                 if ( jr > ir) break;
-                 if ( sw12) {
-                    lsh12 = (ls2 << UNO_SHIFT) + ls1;  
-                 }else{
-                    lsh12 = (ls1 << UNO_SHIFT) + ls2;
-                 }
-                 for (int ls3=0;ls3<nls3;++ls3) {
-                     double d123 = d12 * aux.normalization_factor(lv3_,ls3);
-                     int kr = offs[2] + ls3;
-                     if ( kr > ir ) break;
-                     for (int ls4=0;ls4<nls4;++ls4) {
-//                         norms[len] = d123 * aux.normalization_factor(lv4,ls4);
-                         int lr = offs[3] + ls4;
-                         if ( ( lr > kr ) || ( (ir == kr) && ( lr > jr) ) ) break;
-                         if ( sw34 ) {
-                            lsh34 = ( ls4 << UNO_SHIFT ) + ls3;
-                         } else {
-                            lsh34 = ( ls3 << UNO_SHIFT ) + ls4;
-                         }
-                         lstates[len] = (lsh12 << UNO_SHIFT2) + lsh34;
-                         norms[len] = d123 * aux.normalization_factor(lv4_,ls4); 
-                         sints[len].val = 0.0;
-                         sints[len].i = ir;
-                         sints[len].j = jr;
-                         sints[len].k = kr;
-                         sints[len].l = lr;
-                         ++len;
-                     } 
-                 } 
-              }
-         }    
-         return len;
-    }
-
+                    int nls1 = nls[0];
+                    int nls2 = nls[1];
+                    int nls3 = nls[2];
+                    int nls4 = nls[3];
+                    int lv1 = lvs[0];
+                    int lv2 = lvs[1];
+                    int lv3 = lvs[2];
+                    int lv4 = lvs[3];
+                    int ir0 = offs[0];
+                    int jr0 = offs[1];
+                    int kr0 = offs[2];
+                    int lr0 = offs[3];
+                    int knt = 0;
+                    for (int ils=0; ils<nls1;++ils) {
+                        int ir = ir0 + ils;
+                        for (int jls=0; jls<nls2;++jls) {
+                            int jr = jr0 + jls;
+                            if ( jr > ir ) break;
+                            for (int kls=0; kls<nls3;++kls) {
+                                int kr = kr0 + kls;
+                                if ( kr > ir) break;
+                                for (int lls=0; lls<nls4;++lls) {
+                                    int lr = lr0 + lls;
+                                    if ( lr > kr || ( ir == kr && lr > jr) ) break;
+                                    (sints+knt)->val=0.0;
+                                    (sints+knt)->i=(unsigned int)ir;
+                                    (sints+knt)->j=(unsigned int)jr;
+                                    (sints+knt)->k=(unsigned int)kr;
+                                    (sints+knt)->l=(unsigned int)lr;
+                                    unsigned int l12 = (ils<<UNO_SHIFT) + jls;
+                                    if (sw12) l12=(jls<<UNO_SHIFT)+ils;
+                                    unsigned int l34=(kls<<UNO_SHIFT)+lls;
+                                    if (sw34) l34=(lls<<UNO_SHIFT)+kls;
+                                    lstates[knt]=(l12<<UNO_SHIFT2)+l34;
+                                    norms[knt] =
+                                         aux.normalization_factor(lv1,ils)*
+                                         aux.normalization_factor(lv2,jls)*
+                                         aux.normalization_factor(lv3,kls)*
+                                         aux.normalization_factor(lv4,lls);                     
+                                    ++knt;
+                                }
+                            }
+                        }
+                    }
+                    len = knt;
+                    return len;
+      }
 
 };
 
