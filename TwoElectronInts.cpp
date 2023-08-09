@@ -549,36 +549,25 @@ TwoElectronInts::calculate(const Basis& basis) {
     timer.start();
     int ncalc = 0;
     int offs[4];
-    int nls[4];
-    int lvs[4];
     for (int ish=start; ish<nshell; ++ish) {
         offs[0] = basis.offset(ish);
         int cen1=(shell+ish)->center();
         sq.assign_one(shell[ish],(center+cen1)->r_vec());
-        nls[0] =aux.number_of_lstates(sq.lv1);
-        lvs[0] = sq.lv1;
         for (int jsh=0; jsh<=ish; ++jsh) {
             offs[1] = basis.offset(jsh);
             int cen2=(shell+jsh)->center();
             sq.assign_two(shell[jsh],(center+cen2)->r_vec());
-            nls[1] = aux.number_of_lstates(sq.lv2);
-            lvs[1] = sq.lv2;
             sq.swap_12();
             for (int ksh=0; ksh<=ish; ++ksh) {
                 offs[2] = basis.offset(ksh);
                 int cen3=(shell+ksh)->center();
                 sq.assign_three(shell[ksh],(center+cen3)->r_vec());
-                nls[2]=aux.number_of_lstates(sq.lv3);
-                lvs[2] = sq.lv3;
                 for (int lsh=0; lsh<=ksh; ++lsh) {
                     offs[3] = basis.offset(lsh);
                     int cen4=(shell+lsh)->center();
                     sq.assign_four(shell[lsh],(center+cen4)->r_vec());
-                    nls[3]= aux.number_of_lstates(sq.lv4);
-                    lvs[3] = sq.lv4;
                     sq.swap_34();
-                    int knt= sq.precalculate(offs,nls,lvs,
-                            aux,sints);
+                    int knt= sq.precalculate(offs,aux,sints);
                     if (!knt) continue;
                     ncalc += knt;
                     sq.len=knt;

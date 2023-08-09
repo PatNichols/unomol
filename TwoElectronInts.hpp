@@ -185,22 +185,39 @@ struct ShellQuartet {
       }
     } 
 
-   int precalculate(const int *offs,const int *nls,const int *lvs,
+   int precalculate(const int *offs,
             const AuxFunctions& aux,
             TwoInts * sints)
     {
+/*
                     int nls1 = nls[0];
                     int nls2 = nls[1];
                     int nls3 = nls[2];
                     int nls4 = nls[3];
-                    int lv1 = lvs[0];
-                    int lv2 = lvs[1];
-                    int lv3 = lvs[2];
-                    int lv4 = lvs[3];
+*/
                     int ir0 = offs[0];
                     int jr0 = offs[1];
                     int kr0 = offs[2];
                     int lr0 = offs[3];
+                    int lv1_,lv2_,lv3_,lv4_;
+                    if ( sw12 ) {
+                        lv1_ = lv2;
+                        lv2_ = lv1;
+                    }else{
+                        lv1_ = lv1;
+                        lv2_ = lv2;
+                    }
+                    if ( sw34) {
+                        lv3_ = lv4;
+                        lv4_ = lv3;
+                    }else{
+                        lv3_ = lv3;
+                        lv4_ = lv4;
+                    }
+                    const int nls1 = aux.number_of_lstates(lv1_);
+                    const int nls2 = aux.number_of_lstates(lv2_);
+                    const int nls3 = aux.number_of_lstates(lv3_);
+                    const int nls4 = aux.number_of_lstates(lv4_);
                     int knt = 0;
                     for (int ils=0; ils<nls1;++ils) {
                         int ir = ir0 + ils;
@@ -224,10 +241,10 @@ struct ShellQuartet {
                                     if (sw34) l34=(lls<<UNO_SHIFT)+kls;
                                     lstates[knt]=(l12<<UNO_SHIFT2)+l34;
                                     norms[knt] =
-                                         aux.normalization_factor(lv1,ils)*
-                                         aux.normalization_factor(lv2,jls)*
-                                         aux.normalization_factor(lv3,kls)*
-                                         aux.normalization_factor(lv4,lls);                     
+                                         aux.normalization_factor(lv1_,ils)*
+                                         aux.normalization_factor(lv2_,jls)*
+                                         aux.normalization_factor(lv3_,kls)*
+                                         aux.normalization_factor(lv4_,lls);                     
                                     ++knt;
                                 }
                             }
