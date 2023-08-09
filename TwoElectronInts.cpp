@@ -6,7 +6,7 @@ namespace unomol {
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
 
-//#define UNOMOL_MD_INTS
+#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
 
@@ -324,13 +324,13 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                 }
                 for (int l=0; l<lend; ++l) {
                     if (k==l) f34=1.0;
-                    double c34=c3*f34*sq.co4[l];
-                    double dxp=sq.al4[l];
-                    double qxp=cxp+dxp;
+                    const double c34=c3*f34*sq.co4[l];
+                    const double dxp=sq.al4[l];
+                    const double qxp=cxp+dxp;
                     double cdi=1.0/qxp;
-                    double s34= c34 * std::exp(-cxp*dxp*sq.cd2*cdi);
-                    double txp=pxp+qxp;
-                    double sr= SRterm*s12*s34*2.*abi*cdi/sqrt(txp);
+                    const double s34= c34 * std::exp(-cxp*dxp*sq.cd2*cdi);
+                    const double txp=pxp+qxp;
+                    const double sr= SRterm*s12*s34*2.*abi*cdi/sqrt(txp);
 
                     q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
@@ -344,9 +344,9 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     pq[0] = p[0]-q[0];
                     pq[1] = p[1]-q[1];
                     pq[2] = p[2]-q[2];
-                    double pq2 = pq[0]*pq[0] + pq[1]*pq[1] + pq[2]*pq[2];
-                    double w = pxp * qxp / txp;
-                    double t = w * pq2;
+                    const double pq2 = pq[0]*pq[0] + pq[1]*pq[1] + pq[2]*pq[2];
+                    const double w = pxp * qxp / txp;
+                    const double t = w * pq2;
 
                     rfun.eval(sr,t,w,pq,lvt);
 
@@ -364,36 +364,36 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         const int *lvc3 = aux.l_vector(sq.lv3,kls);
                         const int *lvc4 = aux.l_vector(sq.lv4,lls);
 
-                        int l1 = lvc1[0];
-                        int m1 = lvc1[1];
-                        int n1 = lvc1[2];
+                        const int l1 = lvc1[0];
+                        const int m1 = lvc1[1];
+                        const int n1 = lvc1[2];
 
-                        int l2 = lvc2[0];
-                        int m2 = lvc2[1];
-                        int n2 = lvc2[2];
+                        const int l2 = lvc2[0];
+                        const int m2 = lvc2[1];
+                        const int n2 = lvc2[2];
 
-                        int l12 = l1 + l2;
-                        int m12 = m1 + m2;
-                        int n12 = n1 + n2;
+                        const int l12 = l1 + l2;
+                        const int m12 = m1 + m2;
+                        const int n12 = n1 + n2;
 
-                        int l3 = lvc3[0];
-                        int m3 = lvc3[1];
-                        int n3 = lvc3[2];
+                        const int l3 = lvc3[0];
+                        const int m3 = lvc3[1];
+                        const int n3 = lvc3[2];
 
-                        int l4 = lvc4[0];
-                        int m4 = lvc4[1];
-                        int n4 = lvc4[2];
+                        const int l4 = lvc4[0];
+                        const int m4 = lvc4[1];
+                        const int n4 = lvc4[2];
 
-                        int l34 = l3 + l4;
-                        int m34 = m3 + m4;
-                        int n34 = n3 + n4;
+                        const int l34 = l3 + l4;
+                        const int m34 = m3 + m4;
+                        const int n34 = n3 + n4;
 
                         double sum = 0;
 
                         for (int ix12=0; ix12<=l12; ++ix12) {
                             for (int iy12=0; iy12<=m12; ++iy12) {
                                 for (int iz12=0; iz12<=n12; ++iz12) {
-                                    double v12 =  dx12.getValue(l1,l2,ix12) *
+                                    const double v12 =  dx12.getValue(l1,l2,ix12) *
                                                   dy12.getValue(m1,m2,iy12) *
                                                   dz12.getValue(n1,n2,iz12);
                                     for (int ix34=0; ix34<=l34; ++ix34) {
@@ -433,14 +433,6 @@ void calc_two_electron_ints(const ShellQuartet& sq,
     double pa[3],qc[3];
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
-/*
-    ab[0]=sq.a[0]-sq.b[0];
-    ab[1]=sq.a[1]-sq.b[1];
-    ab[2]=sq.a[2]-sq.b[2];
-    cd[0]=sq.c[0]-sq.d[0];
-    cd[1]=sq.c[1]-sq.d[1];
-    cd[2]=sq.c[2]-sq.d[2];
-*/
     const int lvt12=sq.lv1+sq.lv2;
     const int lvt34=sq.lv3+sq.lv4;
     const int lvt=lvt12+lvt34;
