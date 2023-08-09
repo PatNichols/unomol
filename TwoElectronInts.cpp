@@ -433,12 +433,14 @@ void calc_two_electron_ints(const ShellQuartet& sq,
     double pa[3],qc[3];
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
+/*
     ab[0]=sq.a[0]-sq.b[0];
     ab[1]=sq.a[1]-sq.b[1];
     ab[2]=sq.a[2]-sq.b[2];
     cd[0]=sq.c[0]-sq.d[0];
     cd[1]=sq.c[1]-sq.d[1];
     cd[2]=sq.c[2]-sq.d[2];
+*/
     const int lvt12=sq.lv1+sq.lv2;
     const int lvt34=sq.lv3+sq.lv4;
     const int lvt=lvt12+lvt34;
@@ -506,7 +508,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         const int *lv3 = aux.l_vector(sq.lv3,kls);
                         const int *lv4 = aux.l_vector(sq.lv4,lls);
                         double sum=
-                            rys.Shift(ab,cd,lv1,lv2,lv3,lv4,nroots);
+                            rys.Shift(sq.ab,sq.cd,lv1,lv2,lv3,lv4,nroots);
                         (sints+kc)->val+=sum*sr*sq.norms[kc];
                     }
                 }
