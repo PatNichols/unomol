@@ -110,7 +110,6 @@ struct ShellQuartet {
     void swap_12()
     {
       sw12 = false;
- /*
       if ( lv1 < lv2) {
             sw12 = true;
                 int it=npr1;
@@ -133,13 +132,11 @@ struct ShellQuartet {
             ab[1] = -ab[1];
             ab[2] = -ab[2];
       }
- */
     }
 
     void swap_34()
     {
       sw34 = false;
-/*
       if ( lv3 < lv4) {
             sw34 = true;
                 int it=npr3;
@@ -162,12 +159,10 @@ struct ShellQuartet {
             cd[1] = -cd[1];
             cd[2] = -cd[2];
       }
-*/
     }
  
     void unswap_12()
     {
-/*
       if (sw12) {
           sw12 = false;
                 npr1=npr2;
@@ -176,20 +171,17 @@ struct ShellQuartet {
                 co1=co2;
                 a=b;          
       }
-*/      
     }
 
     void unswap_34()
     {
       if (sw34) {
-/*
           sw34 = false;
           npr3 = npr4;
           lv3 = lv4;
           al3 = al4;
           co3 = co4;
           c = d;
-*/
       }
     } 
 
@@ -211,10 +203,10 @@ struct ShellQuartet {
               lv3_ = lv3;
               lv4_ = lv4;         
          }
-         int nls1 = aux.number_of_lstates(lv1_);
-         int nls2 = aux.number_of_lstates(lv2_);
-         int nls3 = aux.number_of_lstates(lv3_);
-         int nls4 = aux.number_of_lstates(lv4_);
+         int nls1 = aux.number_of_lstates(lv1);
+         int nls2 = aux.number_of_lstates(lv2);
+         int nls3 = aux.number_of_lstates(lv3);
+         int nls4 = aux.number_of_lstates(lv4);
          len = 0;
          for (int ls1=0;ls1<nls1;++ls1) {
               double d1 = aux.normalization_factor(lv1_,ls1);

@@ -560,24 +560,8 @@ TwoElectronInts::calculate(const Basis& basis) {
             sq.assign_two(shell[jsh],(center+cen2)->r_vec());
             int nls2=aux.number_of_lstates(sq.lv2);
             int lv2 = sq.lv2;
-            bool switch12=sq.lv1<sq.lv2;
-            if (switch12) {
-                it=sq.npr1;
-                sq.npr1=sq.npr2;
-                sq.npr2=it;
-                it=sq.lv1;
-                sq.lv1=sq.lv2;
-                sq.lv2=it;
-                dp=sq.al1;
-                sq.al1=sq.al2;
-                sq.al2=dp;
-                dp=sq.co1;
-                sq.co1=sq.co2;
-                sq.co2=dp;
-                dp=sq.a;
-                sq.a=sq.b;
-                sq.b=dp;
-            }
+            sq.swap_12();
+            bool switch12= sq.sw12;
             for (int ksh=0; ksh<=ish; ++ksh) {
                 int kr0 = basis.offset(ksh);
                 int cen3=(shell+ksh)->center();
@@ -590,24 +574,8 @@ TwoElectronInts::calculate(const Basis& basis) {
                     sq.assign_four(shell[lsh],(center+cen4)->r_vec());
                     int nls4=aux.number_of_lstates(sq.lv4);
                     int lv4 = sq.lv4;
-                    bool switch34=sq.lv3<sq.lv4;
-                    if (switch34) {
-                        it=sq.npr3;
-                        sq.npr3=sq.npr4;
-                        sq.npr4=it;
-                        it=sq.lv3;
-                        sq.lv3=sq.lv4;
-                        sq.lv4=it;
-                        dp=sq.al3;
-                        sq.al3=sq.al4;
-                        sq.al4=dp;
-                        dp=sq.co3;
-                        sq.co3=sq.co4;
-                        sq.co4=dp;
-                        dp=sq.c;
-                        sq.c=sq.d;
-                        sq.d=dp;
-                    }
+                    sq.swap_34();
+                    bool switch34 = sq.sw34;
                     int knt=0;
                     for (int ils=0; ils<nls1;++ils) {
                         int ir = ir0 + ils;
@@ -653,22 +621,10 @@ TwoElectronInts::calculate(const Basis& basis) {
                             cache.write(sints+kc,1);
                         }
                     }
-                    if (switch34) {
-                        sq.npr3=sq.npr4;
-                        sq.lv3=sq.lv4;
-                        sq.al3=sq.al4;
-                        sq.co3=sq.co4;
-                        sq.c=sq.d;
-                    }
+                    sq.unswap_34();
                 }
             }
-            if (switch12) {
-                sq.npr1=sq.npr2;
-                sq.lv1=sq.lv2;
-                sq.al1=sq.al2;
-                sq.co1=sq.co2;
-                sq.a=sq.b;
-            }
+            sq.unswap_12();
         }
     }
     timer.stop();
