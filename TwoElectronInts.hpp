@@ -65,7 +65,7 @@ struct ShellQuartet {
         delete [] norms;
     }
 
-    void assign_one(const Shell& sh,const double *rc)
+    void assign_one(const Shell& sh,const double *rc) noexcept
     {
         npr1=sh.number_of_prims();
         lv1=sh.Lvalue();
@@ -73,7 +73,7 @@ struct ShellQuartet {
         co1=sh.cof_ptr();
         a=rc;
     }
-    void assign_two(const Shell& sh,const double *rc)
+    void assign_two(const Shell& sh,const double *rc) noexcept
     {
         npr2=sh.number_of_prims();
         lv2=sh.Lvalue();
@@ -86,7 +86,7 @@ struct ShellQuartet {
         ab2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2]*ab[2];
     }
 
-    void assign_three(const Shell& sh,const double *rc)
+    void assign_three(const Shell& sh,const double *rc) noexcept
     {
         npr3=sh.number_of_prims();
         lv3=sh.Lvalue();
@@ -94,7 +94,7 @@ struct ShellQuartet {
         co3=sh.cof_ptr();
         c=rc;
     }
-    void assign_four(const Shell& sh,const double *rc)
+    void assign_four(const Shell& sh,const double *rc) noexcept
     {
         npr4=sh.number_of_prims();
         lv4=sh.Lvalue();
@@ -107,7 +107,7 @@ struct ShellQuartet {
         cd2 = cd[0] * cd[0] + cd[1] * cd[1] + cd[2]*cd[2];
     }
 
-    void swap_12()
+    void swap_12() noexcept
     {
       sw12 = false;
       if ( lv1 < lv2) {
@@ -134,7 +134,7 @@ struct ShellQuartet {
       }
     }
 
-    void swap_34()
+    void swap_34() noexcept
     {
       sw34 = false;
       if ( lv3 < lv4) {
@@ -161,7 +161,7 @@ struct ShellQuartet {
       }
     }
  
-    void unswap_12()
+    void unswap_12() noexcept
     {
       if (sw12) {
           sw12 = false;
@@ -173,7 +173,7 @@ struct ShellQuartet {
       }
     }
 
-    void unswap_34()
+    void unswap_34() noexcept
     {
       if (sw34) {
           sw34 = false;

@@ -6,14 +6,14 @@ namespace unomol {
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
 
-#define UNOMOL_MD_INTS
+//#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
 
 void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             MDInts& mds,
-                            TwoInts* sints) 
+                            TwoInts* sints) noexcept
 {
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
@@ -26,8 +26,8 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
 //    double pq[3];
 //    pq[0] = pq[1] = pq[2] = 0.0;
     for (int i=0; i<sq.npr1; ++i) {
-        double axp=sq.al1[i];
-        double c1=sq.co1[i];
+        const double axp=sq.al1[i];
+        const double c1=sq.co1[i];
         double f12=1.0;
         int jend=sq.npr2;
         if (sq.al1==sq.al2) {
@@ -36,9 +36,9 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
         }
         for (int j=0; j<jend; ++j) {
             if (i==j) f12=1.0;
-            double s12=c1*f12*sq.co2[j];
-            double bxp=sq.al2[j];
-            double pxp=axp+bxp;
+            const double s12=c1*f12*sq.co2[j];
+            const double bxp=sq.al2[j];
+            const double pxp=axp+bxp;
             double abi=1.0/pxp;
             abi *= 0.5;
             dx12.eval_one_cen(abi,sq.lv1,sq.lv2);
@@ -427,7 +427,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
 void calc_two_electron_ints(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             Rys& rys,
-                            TwoInts* sints) {
+                            TwoInts* sints) noexcept {
     double p[3],q[3];
     double ab[3],cd[3];
     double pa[3],qc[3];
@@ -438,8 +438,8 @@ void calc_two_electron_ints(const ShellQuartet& sq,
     const int lvt=lvt12+lvt34;
     const int nroots=lvt/2+1;
     for (int i=0; i<sq.npr1; ++i) {
-        double axp=sq.al1[i];
-        double c1=sq.co1[i];
+        const double axp=sq.al1[i];
+        const double c1=sq.co1[i];
         double f12=1.0;
         int jend=sq.npr2;
         if (sq.al1==sq.al2) {
@@ -448,11 +448,11 @@ void calc_two_electron_ints(const ShellQuartet& sq,
         }
         for (int j=0; j<jend; ++j) {
             if (i==j) f12=1.0;
-            double c12=c1*f12*sq.co2[j];
-            double bxp=sq.al2[j];
-            double pxp=axp+bxp;
-            double abi=1.0/pxp;
-            double s12= std::exp(-axp*bxp*sq.ab2*abi);
+            const double c12=c1*f12*sq.co2[j];
+            const double bxp=sq.al2[j];
+            const double pxp=axp+bxp;
+            const double abi=1.0/pxp;
+            const double s12= std::exp(-axp*bxp*sq.ab2*abi);
             p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
             p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
             p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
@@ -460,8 +460,8 @@ void calc_two_electron_ints(const ShellQuartet& sq,
             pa[1] = p[1] - sq.a[1];
             pa[2] = p[2] - sq.a[2];
             for (int k=0; k<sq.npr3; ++k) {
-                double cxp=sq.al3[k];
-                double c3=sq.co3[k];
+                const double cxp=sq.al3[k];
+                const double c3=sq.co3[k];
                 double f34=1.0;
                 int lend=sq.npr4;
                 if (sq.al3==sq.al4) {
@@ -470,12 +470,12 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                 }
                 for (int l=0; l<lend; ++l) {
                     if (k==l) f34=1.0;
-                    double c34=c3*f34*sq.co4[l];
-                    double dxp=sq.al4[l];
-                    double qxp=cxp+dxp;
-                    double cdi=1.0/qxp;
-                    double s34= std::exp(-cxp*dxp*sq.cd2*cdi);
-                    double txp=pxp+qxp;
+                    const double c34=c3*f34*sq.co4[l];
+                    const double dxp=sq.al4[l];
+                    const double qxp=cxp+dxp;
+                    const double cdi=1.0/qxp;
+                    const double s34= std::exp(-cxp*dxp*sq.cd2*cdi);
+                    const double txp=pxp+qxp;
                     double sr=SRterm*s12*s34*abi*cdi/sqrt(txp);
                     if (sr<threshold) continue;
                     sr *= c12 * c34;
@@ -488,13 +488,13 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     rys.Recur(p,q,pa,qc,pxp,qxp,txp,lvt12,lvt34,nroots);
                     for (int kc=0; kc<sq.len; ++kc) {
                         unsigned int key=sq.lstates[kc];
-                        int lls=key&UNO_MASK;
+                        const int lls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
-                        int kls=key&UNO_MASK;
+                        const int kls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
-                        int jls=key&UNO_MASK;
+                        const int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
-                        int ils=key&UNO_MASK;
+                        const int ils=key&UNO_MASK;
                         const int *lv1 = aux.l_vector(sq.lv1,ils);
                         const int *lv2 = aux.l_vector(sq.lv2,jls);
                         const int *lv3 = aux.l_vector(sq.lv3,kls);
