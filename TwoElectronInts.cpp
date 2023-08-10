@@ -6,7 +6,7 @@ namespace unomol {
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
 
-//#define UNOMOL_MD_INTS
+#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
 
@@ -23,8 +23,6 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
     MD_Dfunction& dx12 = mds.dx12;
     MD_Dfunction& dx34 = mds.dx34;
     MD_Rfunction& rfun = mds.rfun;
-//    double pq[3];
-//    pq[0] = pq[1] = pq[2] = 0.0;
     for (int i=0; i<sq.npr1; ++i) {
         const double axp=sq.al1[i];
         const double c1=sq.co1[i];
@@ -138,7 +136,7 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
 void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             MDInts& mds,
-                            TwoInts* sints) {
+                            TwoInts* sints) noexcept {
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
     const int lvt12=sq.lv1+sq.lv2;
@@ -274,7 +272,7 @@ void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
 void calc_two_electron_ints(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             MDInts& mds,
-                            TwoInts* sints) {
+                            TwoInts* sints) noexcept {
     double p[3],q[3],pq[3];
     if ( sq.a == sq.b && sq.a == sq.c && sq.a == sq.d) return calc_two_electron_ints_one_cen(sq,aux,mds,sints);
     if ( sq.a == sq.b && sq.c == sq.d) return calc_two_electron_ints_two_cen(sq,aux,mds,sints);
@@ -512,7 +510,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
 #endif
 
 void
-TwoElectronInts::calculate(const Basis& basis) {
+TwoElectronInts::calculate(const Basis& basis) noexcept {
     const double threshold=1.e-14;
     int pknt=0;
     const Shell* shell(basis.shell_ptr());
@@ -591,7 +589,7 @@ TwoElectronInts::calculate(const Basis& basis) {
 }
 
 void
-TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
+TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) noexcept {
     constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 
@@ -708,7 +706,7 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
 
 void
 TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
-                             double *GmatA,double *GmatB) {
+                             double *GmatA,double *GmatB) noexcept {
     constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 

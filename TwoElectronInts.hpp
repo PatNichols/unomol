@@ -285,16 +285,16 @@ class TwoElectronInts {
     ~TwoElectronInts() {
     }
 
-    void calculate(const Basis& base);
+    void calculate(const Basis& base) noexcept;
 
-    void recalculate(const Basis& base) {
+    void recalculate(const Basis& base) noexcept {
         calculate(base);
     }
 
-    void formGmatrix(const double* Pmat,double *Gmat);
+    void formGmatrix(const double* Pmat,double *Gmat) noexcept;
 
     void formGmatrix(const double* PmatA,const double* PmatB,
-                     double* GmatA,double* GmatB);
+                     double* GmatA,double* GmatB) noexcept;
   private:
     putils::Cache cache;
     int start;

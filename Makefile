@@ -1,5 +1,5 @@
-CFLAGS= -g -O2 -ffast-math -mtune=native -mavx2 --std=c99 
-CXXFLAGS= -g -O2 -ffast-math -mtune=native --std=c++17 -mavx2  
+CFLAGS= -Ofast -ffast-math -mtune=native -mavx2 --std=c99
+CXXFLAGS= -Ofast -O3 -ffast-math -mtune=native --std=c++17 -mavx2
 
 #CXXFLAGS=-g -O1 -fPIC -fsanitize=address --std=c++17
 #CFLAGS=-g -O1 -fPIC -fsanitize=address
