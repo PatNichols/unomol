@@ -21,7 +21,6 @@ struct MomInts {
 
 struct Moments {
     double dx,dy,dz,qxx,qxy,qxz,qyy,qyz,qzz;
-    unsigned int ijr;
 };
 
 }
