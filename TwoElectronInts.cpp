@@ -560,7 +560,7 @@ TwoElectronInts::calculate(const Basis& basis) noexcept {
                     sq.assign_four(shell[lsh],(center+cen4)->r_vec());
                     sq.swap_34();
                     int knt= sq.precalculate(offs,aux,sints);
-                    if (!knt) continue;
+                    if (!knt) break;
                     ncalc += knt;
                     sq.len=knt;
 #ifdef UNOMOL_MD_INTS                    
