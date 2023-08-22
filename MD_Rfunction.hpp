@@ -2325,11 +2325,63 @@ public:
             r0[lx] *= sterm;
             sterm *= wterm;
         }
-        for (int lx=0; lx<=ltot; ++lx) {
+        r[0][0][0] = r0[0];
+        if (ltot == 0) {
+            return;
+        }
+        r[0][0][1] = 0.0;
+        r[0][1][0] = 0.0;
+        r[1][0][0] = 0.0;
+        if (ltot == 1) {
+            return;
+        }
+        double r1 = r0[1];
+        r[0][0][2] = r1;
+        r[0][1][1] = 0.;
+        r[0][2][0] = r1;
+        r[1][0][1] = 0.;
+        r[1][1][0] = 0.;
+        r[2][0][0] = r1;
+        if (ltot == 2) {
+            return;
+        }
+        r[0][0][3] = 0.;
+        r[0][1][2] = 0.;
+        r[1][0][2] = 0.;
+        r[0][2][1] = 0.;
+        r[1][1][1] = 0.;
+        r[2][0][1] = 0.;
+        r[0][3][0] = 0.;
+        r[1][2][0] = 0.;
+        r[2][1][0] = 0.;
+        r[3][0][0] = 0.;
+        if (ltot == 3) {
+            return;
+        }
+        const double r2 = r0[2];
+        r[0][0][4] = 3.0 * r2;
+        r[0][1][3] = 0.;
+        r[1][0][3] = 0.;
+        r[0][2][2] = r2;
+        r[1][1][2] = 0.;
+        r[2][0][2] = r2;
+        r[0][3][1] = 0.;
+        r[1][2][1] = 0.;
+        r[2][1][1] = 0.;
+        r[3][0][1] = 0.0;
+        r[0][4][0] = 3.0 * r2;
+        r[1][3][0] = 0.;
+        r[2][2][0] = r2;
+        r[3][1][0] = 0.;
+        r[4][0][0] = 3.0 * r2;
+        if (ltot == 4) {
+            return;
+        }
+        for (int lx=0;lx<=ltot;++lx) {
             int lyend = ltot - lx;
-            for (int ly=0; ly<=lyend; ++ly) {
+            for (int ly=0;ly<=lyend;++ly) {
                 int lzend = lyend - ly;
-                for (int lz=0; lz<=lzend; ++lz) {
+                for (int lz=0;lz<=lzend;++lz) {
                     r[lx][ly][lz] = 0.0;
                 }
             }
@@ -2341,15 +2393,16 @@ public:
             for (int ly=0; ly<=lyend; ly+=2) {
                 int lzend = lyend - ly;
                 int lyh = ly >> 1;
+                int index = lxh + lyh;
+                int lzh = 0;
                 double dxy = dfact[lyh] * dx;
-                for (int lz=0; lz<=lzend; lz+=2) {
-                    int lzh = lz >> 1;
-                    int index = lxh + lyh + lzh;
+                for (int lz=0; lz<=lzend; lz+=2, ++index, ++lzh) {
                     r[lx][ly][lz] = dxy * dfact[lzh] * r0[index];
                 }
             }
         }
     }
+
 };
 }
 #endif

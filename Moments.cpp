@@ -40,8 +40,7 @@ void calc_moments (MomInts * mvals,
                 l2 = aux.Lxyz (sp.lv2, ls2, 0);
                 m2 = aux.Lxyz (sp.lv2, ls2, 1);
                 n2 = aux.Lxyz (sp.lv2, ls2, 2);
-                nfact = aux.normalization_factor (sp.lv1, ls1) *
-                        aux.normalization_factor (sp.lv2, ls2) * c12;
+                nfact = sp.norms[kc] * c12;
                 sov = nfact * s12;
                 ovl = sov * dx.getValue (l1, l2, 0) *
                       dy.getValue (m1, m2, 0) * dz.getValue (n1, n2, 0);
@@ -102,8 +101,7 @@ void MomentInts (const Basis & basis ) {
     const AuxFunctions& aux(*(basis.auxfun_ptr()));
     int maxlst = aux.number_of_lstates (lmax);
     int maxlst2 = maxlst * maxlst;
-    ShellPairData sp;
-    sp.lstates = new unsigned short[maxlst2];
+    ShellPairData sp(lmax);
     MomInts *mvals = new MomInts[maxlst2];
     double *factors = new double[maxlst2];
     MD_Dfunction dx (lmax + 2);
@@ -116,23 +114,14 @@ void MomentInts (const Basis & basis ) {
     }
     for (ish = 0; ish < nshell; ++ish) {
         int ir0 = basis.offset(ish);
-        sp.npr1 = (shell + ish)->number_of_prims ();
-        sp.lv1 = (shell + ish)->Lvalue ();
-        icen = (shell + ish)->center ();
-        sp.al1 = (shell + ish)->alf_ptr ();
-        sp.co1 = (shell + ish)->cof_ptr ();
-        sp.a = (center + icen)->r_vec ();
-        int nls1 = aux.number_of_lstates (sp.lv1);
+        int icen = (shell + ish)->center ();
+        sp.assign_one(shell[ish],center[icen].r_vec());
         for (jsh = 0; jsh <= ish; ++jsh) {
             int jr0 = basis.offset(jsh);
-            sp.npr2 = (shell + jsh)->number_of_prims ();
-            sp.lv2 = (shell + jsh)->Lvalue ();
-            jcen = (shell + jsh)->center ();
-            sp.al2 = (shell + jsh)->alf_ptr ();
-            sp.co2 = (shell + jsh)->cof_ptr ();
-            int nls2 = aux.number_of_lstates (sp.lv2);
-            sp.b = (center + jcen)->r_vec ();
-            sp.ab2=dist_sqr(sp.a,sp.b);
+            int jcen = (shell + jsh)->center ();
+            sp.assign_two(shell[jsh],center[jcen].r_vec());
+            int nls1 = aux.number_of_lstates(sp.lv1);
+            int nls2 = aux.number_of_lstates(sp.lv2);
             int knt = 0;
             for (int ils = 0; ils < nls1; ++ils) {
                 int ir = ir0 + ils;
@@ -151,6 +140,8 @@ void MomentInts (const Basis & basis ) {
                     (mvals + knt)->qzz = 0.0;
                     (mvals + knt)->ijr = iir + jr;
                     (sp.lstates)[knt] = (unsigned short)((ils<<4)+jls);
+                    (sp.norms)[knt] = aux.normalization_factor(sp.lv1,ils) *
+                                    aux.normalization_factor(sp.lv2,jls);
                     factors[knt] = 4.0;
                     if (ir == jr) {
                         factors[knt] = 2.0;
@@ -182,7 +173,6 @@ void MomentInts (const Basis & basis ) {
     fclose(out);
     delete [] factors;
     delete [] mvals;
-    delete [] sp.lstates;
 }
 
 

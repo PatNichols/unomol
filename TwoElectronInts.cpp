@@ -4,16 +4,16 @@ namespace unomol {
 
 #define UNO_MASK 0xF
 #define UNO_SHIFT 4U
-#define UNO_SHIFT2 8U
-
-//#define UNOMOL_MD_INTS
+#define UNO_SHIFT2 8
+  
+#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
 
 void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             MDInts& mds,
-                            TwoInts* sints) 
+                            TwoInts* sints) noexcept
 {
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
@@ -23,11 +23,9 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
     MD_Dfunction& dx12 = mds.dx12;
     MD_Dfunction& dx34 = mds.dx34;
     MD_Rfunction& rfun = mds.rfun;
-//    double pq[3];
-//    pq[0] = pq[1] = pq[2] = 0.0;
     for (int i=0; i<sq.npr1; ++i) {
-        double axp=sq.al1[i];
-        double c1=sq.co1[i];
+        const double axp=sq.al1[i];
+        const double c1=sq.co1[i];
         double f12=1.0;
         int jend=sq.npr2;
         if (sq.al1==sq.al2) {
@@ -36,9 +34,9 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
         }
         for (int j=0; j<jend; ++j) {
             if (i==j) f12=1.0;
-            double s12=c1*f12*sq.co2[j];
-            double bxp=sq.al2[j];
-            double pxp=axp+bxp;
+            const double s12=c1*f12*sq.co2[j];
+            const double bxp=sq.al2[j];
+            const double pxp=axp+bxp;
             double abi=1.0/pxp;
             abi *= 0.5;
             dx12.eval_one_cen(abi,sq.lv1,sq.lv2);
@@ -138,7 +136,7 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
 void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             MDInts& mds,
-                            TwoInts* sints) {
+                            TwoInts* sints) noexcept {
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
     const int lvt12=sq.lv1+sq.lv2;
@@ -274,7 +272,7 @@ void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
 void calc_two_electron_ints(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             MDInts& mds,
-                            TwoInts* sints) {
+                            TwoInts* sints) noexcept {
     double p[3],q[3],pq[3];
     if ( sq.a == sq.b && sq.a == sq.c && sq.a == sq.d) return calc_two_electron_ints_one_cen(sq,aux,mds,sints);
     if ( sq.a == sq.b && sq.c == sq.d) return calc_two_electron_ints_two_cen(sq,aux,mds,sints);
@@ -324,13 +322,13 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                 }
                 for (int l=0; l<lend; ++l) {
                     if (k==l) f34=1.0;
-                    double c34=c3*f34*sq.co4[l];
-                    double dxp=sq.al4[l];
-                    double qxp=cxp+dxp;
+                    const double c34=c3*f34*sq.co4[l];
+                    const double dxp=sq.al4[l];
+                    const double qxp=cxp+dxp;
                     double cdi=1.0/qxp;
-                    double s34= c34 * std::exp(-cxp*dxp*sq.cd2*cdi);
-                    double txp=pxp+qxp;
-                    double sr= SRterm*s12*s34*2.*abi*cdi/sqrt(txp);
+                    const double s34= c34 * std::exp(-cxp*dxp*sq.cd2*cdi);
+                    const double txp=pxp+qxp;
+                    const double sr= SRterm*s12*s34*2.*abi*cdi/sqrt(txp);
 
                     q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
@@ -344,9 +342,9 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     pq[0] = p[0]-q[0];
                     pq[1] = p[1]-q[1];
                     pq[2] = p[2]-q[2];
-                    double pq2 = pq[0]*pq[0] + pq[1]*pq[1] + pq[2]*pq[2];
-                    double w = pxp * qxp / txp;
-                    double t = w * pq2;
+                    const double pq2 = pq[0]*pq[0] + pq[1]*pq[1] + pq[2]*pq[2];
+                    const double w = pxp * qxp / txp;
+                    const double t = w * pq2;
 
                     rfun.eval(sr,t,w,pq,lvt);
 
@@ -364,36 +362,36 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         const int *lvc3 = aux.l_vector(sq.lv3,kls);
                         const int *lvc4 = aux.l_vector(sq.lv4,lls);
 
-                        int l1 = lvc1[0];
-                        int m1 = lvc1[1];
-                        int n1 = lvc1[2];
+                        const int l1 = lvc1[0];
+                        const int m1 = lvc1[1];
+                        const int n1 = lvc1[2];
 
-                        int l2 = lvc2[0];
-                        int m2 = lvc2[1];
-                        int n2 = lvc2[2];
+                        const int l2 = lvc2[0];
+                        const int m2 = lvc2[1];
+                        const int n2 = lvc2[2];
 
-                        int l12 = l1 + l2;
-                        int m12 = m1 + m2;
-                        int n12 = n1 + n2;
+                        const int l12 = l1 + l2;
+                        const int m12 = m1 + m2;
+                        const int n12 = n1 + n2;
 
-                        int l3 = lvc3[0];
-                        int m3 = lvc3[1];
-                        int n3 = lvc3[2];
+                        const int l3 = lvc3[0];
+                        const int m3 = lvc3[1];
+                        const int n3 = lvc3[2];
 
-                        int l4 = lvc4[0];
-                        int m4 = lvc4[1];
-                        int n4 = lvc4[2];
+                        const int l4 = lvc4[0];
+                        const int m4 = lvc4[1];
+                        const int n4 = lvc4[2];
 
-                        int l34 = l3 + l4;
-                        int m34 = m3 + m4;
-                        int n34 = n3 + n4;
+                        const int l34 = l3 + l4;
+                        const int m34 = m3 + m4;
+                        const int n34 = n3 + n4;
 
                         double sum = 0;
 
                         for (int ix12=0; ix12<=l12; ++ix12) {
                             for (int iy12=0; iy12<=m12; ++iy12) {
                                 for (int iz12=0; iz12<=n12; ++iz12) {
-                                    double v12 =  dx12.getValue(l1,l2,ix12) *
+                                    const double v12 =  dx12.getValue(l1,l2,ix12) *
                                                   dy12.getValue(m1,m2,iy12) *
                                                   dz12.getValue(n1,n2,iz12);
                                     for (int ix34=0; ix34<=l34; ++ix34) {
@@ -427,25 +425,19 @@ void calc_two_electron_ints(const ShellQuartet& sq,
 void calc_two_electron_ints(const ShellQuartet& sq,
                             const AuxFunctions& aux,
                             Rys& rys,
-                            TwoInts* sints) {
+                            TwoInts* sints) noexcept {
     double p[3],q[3];
     double ab[3],cd[3];
     double pa[3],qc[3];
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
-    ab[0]=sq.a[0]-sq.b[0];
-    ab[1]=sq.a[1]-sq.b[1];
-    ab[2]=sq.a[2]-sq.b[2];
-    cd[0]=sq.c[0]-sq.d[0];
-    cd[1]=sq.c[1]-sq.d[1];
-    cd[2]=sq.c[2]-sq.d[2];
     const int lvt12=sq.lv1+sq.lv2;
     const int lvt34=sq.lv3+sq.lv4;
     const int lvt=lvt12+lvt34;
     const int nroots=lvt/2+1;
     for (int i=0; i<sq.npr1; ++i) {
-        double axp=sq.al1[i];
-        double c1=sq.co1[i];
+        const double axp=sq.al1[i];
+        const double c1=sq.co1[i];
         double f12=1.0;
         int jend=sq.npr2;
         if (sq.al1==sq.al2) {
@@ -454,11 +446,11 @@ void calc_two_electron_ints(const ShellQuartet& sq,
         }
         for (int j=0; j<jend; ++j) {
             if (i==j) f12=1.0;
-            double c12=c1*f12*sq.co2[j];
-            double bxp=sq.al2[j];
-            double pxp=axp+bxp;
-            double abi=1.0/pxp;
-            double s12= std::exp(-axp*bxp*sq.ab2*abi);
+            const double c12=c1*f12*sq.co2[j];
+            const double bxp=sq.al2[j];
+            const double pxp=axp+bxp;
+            const double abi=1.0/pxp;
+            const double s12= std::exp(-axp*bxp*sq.ab2*abi);
             p[0]=(axp*sq.a[0]+bxp*sq.b[0])*abi;
             p[1]=(axp*sq.a[1]+bxp*sq.b[1])*abi;
             p[2]=(axp*sq.a[2]+bxp*sq.b[2])*abi;
@@ -466,8 +458,8 @@ void calc_two_electron_ints(const ShellQuartet& sq,
             pa[1] = p[1] - sq.a[1];
             pa[2] = p[2] - sq.a[2];
             for (int k=0; k<sq.npr3; ++k) {
-                double cxp=sq.al3[k];
-                double c3=sq.co3[k];
+                const double cxp=sq.al3[k];
+                const double c3=sq.co3[k];
                 double f34=1.0;
                 int lend=sq.npr4;
                 if (sq.al3==sq.al4) {
@@ -476,12 +468,12 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                 }
                 for (int l=0; l<lend; ++l) {
                     if (k==l) f34=1.0;
-                    double c34=c3*f34*sq.co4[l];
-                    double dxp=sq.al4[l];
-                    double qxp=cxp+dxp;
-                    double cdi=1.0/qxp;
-                    double s34= std::exp(-cxp*dxp*sq.cd2*cdi);
-                    double txp=pxp+qxp;
+                    const double c34=c3*f34*sq.co4[l];
+                    const double dxp=sq.al4[l];
+                    const double qxp=cxp+dxp;
+                    const double cdi=1.0/qxp;
+                    const double s34= std::exp(-cxp*dxp*sq.cd2*cdi);
+                    const double txp=pxp+qxp;
                     double sr=SRterm*s12*s34*abi*cdi/sqrt(txp);
                     if (sr<threshold) continue;
                     sr *= c12 * c34;
@@ -494,19 +486,20 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     rys.Recur(p,q,pa,qc,pxp,qxp,txp,lvt12,lvt34,nroots);
                     for (int kc=0; kc<sq.len; ++kc) {
                         unsigned int key=sq.lstates[kc];
-                        int lls=key&UNO_MASK;
+                        const int lls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
-                        int kls=key&UNO_MASK;
+                        const int kls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
-                        int jls=key&UNO_MASK;
+                        const int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
-                        int ils=key&UNO_MASK;
+                        const int ils=key&UNO_MASK;
+
                         const int *lv1 = aux.l_vector(sq.lv1,ils);
                         const int *lv2 = aux.l_vector(sq.lv2,jls);
                         const int *lv3 = aux.l_vector(sq.lv3,kls);
                         const int *lv4 = aux.l_vector(sq.lv4,lls);
                         double sum=
-                            rys.Shift(ab,cd,lv1,lv2,lv3,lv4,nroots);
+                            rys.Shift(sq.ab,sq.cd,lv1,lv2,lv3,lv4,nroots);
                         (sints+kc)->val+=sum*sr*sq.norms[kc];
                     }
                 }
@@ -518,7 +511,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
 #endif
 
 void
-TwoElectronInts::calculate(const Basis& basis) {
+TwoElectronInts::calculate(const Basis& basis) noexcept {
     const double threshold=1.e-14;
     int pknt=0;
     const Shell* shell(basis.shell_ptr());
@@ -548,117 +541,42 @@ TwoElectronInts::calculate(const Basis& basis) {
     putils::Stopwatch timer;
     timer.start();
     int ncalc = 0;
+
+    int offs[4];
+
     for (int ish=start; ish<nshell; ++ish) {
         int ir0 = basis.offset(ish);
         sq.npr1=(shell+ish)->number_of_prims();
         sq.lv1=(shell+ish)->Lvalue();
         int cen1=(shell+ish)->center();
-        sq.al1=(shell+ish)->alf_ptr();
-        sq.co1=(shell+ish)->cof_ptr();
-        sq.a=(center+cen1)->r_vec();
-        int nls1=aux.number_of_lstates(sq.lv1);
-        int lv1 = sq.lv1;
+
+        sq.assign_one(shell[ish],(center+cen1)->r_vec());
+
         for (int jsh=0; jsh<=ish; ++jsh) {
             int jr0 = basis.offset(jsh);
             sq.npr2=(shell+jsh)->number_of_prims();
             sq.lv2=(shell+jsh)->Lvalue();
             int cen2=(shell+jsh)->center();
-            sq.al2=(shell+jsh)->alf_ptr();
-            sq.co2=(shell+jsh)->cof_ptr();
-            sq.b=(center+cen2)->r_vec();
-            sq.ab2=dist_sqr(sq.a,sq.b);
-            int nls2=aux.number_of_lstates(sq.lv2);
-            int lv2 = sq.lv2;
-            bool switch12=sq.lv1<sq.lv2;
-            if (switch12) {
-                it=sq.npr1;
-                sq.npr1=sq.npr2;
-                sq.npr2=it;
-                it=sq.lv1;
-                sq.lv1=sq.lv2;
-                sq.lv2=it;
-                dp=sq.al1;
-                sq.al1=sq.al2;
-                sq.al2=dp;
-                dp=sq.co1;
-                sq.co1=sq.co2;
-                sq.co2=dp;
-                dp=sq.a;
-                sq.a=sq.b;
-                sq.b=dp;
-            }
+            sq.assign_two(shell[jsh],(center+cen2)->r_vec());
+            sq.swap_12();
+
             for (int ksh=0; ksh<=ish; ++ksh) {
                 int kr0 = basis.offset(ksh);
                 sq.npr3=(shell+ksh)->number_of_prims();
                 sq.lv3=(shell+ksh)->Lvalue();
                 int cen3=(shell+ksh)->center();
-                sq.al3=(shell+ksh)->alf_ptr();
-                sq.co3=(shell+ksh)->cof_ptr();
-                sq.c=(center+cen3)->r_vec();
-                int nls3=aux.number_of_lstates(sq.lv3);
-                int lv3 = sq.lv3;
+                sq.assign_three(shell[ksh],(center+cen3)->r_vec());
                 for (int lsh=0; lsh<=ksh; ++lsh) {
                     int lr0 = basis.offset(lsh);
                     sq.npr4=(shell+lsh)->number_of_prims();
                     sq.lv4=(shell+lsh)->Lvalue();
                     int cen4=(shell+lsh)->center();
-                    sq.al4=(shell+lsh)->alf_ptr();
-                    sq.co4=(shell+lsh)->cof_ptr();
-                    sq.d=(center+cen4)->r_vec();
-                    sq.cd2=dist_sqr(sq.c,sq.d);
-                    int nls4=aux.number_of_lstates(sq.lv4);
-                    int lv4 = sq.lv4;
-                    bool switch34=sq.lv3<sq.lv4;
-                    if (switch34) {
-                        it=sq.npr3;
-                        sq.npr3=sq.npr4;
-                        sq.npr4=it;
-                        it=sq.lv3;
-                        sq.lv3=sq.lv4;
-                        sq.lv4=it;
-                        dp=sq.al3;
-                        sq.al3=sq.al4;
-                        sq.al4=dp;
-                        dp=sq.co3;
-                        sq.co3=sq.co4;
-                        sq.co4=dp;
-                        dp=sq.c;
-                        sq.c=sq.d;
-                        sq.d=dp;
-                    }
-                    int knt=0;
-                    for (int ils=0; ils<nls1;++ils) {
-                        int ir = ir0 + ils;
-                        for (int jls=0; jls<nls2;++jls) {
-                            int jr = jr0 + jls;
-                            if ( jr > ir ) break;
-                            for (int kls=0; kls<nls3;++kls) {
-                                int kr = kr0 + kls;
-                                if ( kr > ir) break;
-                                for (int lls=0; lls<nls4;++lls) {
-                                    int lr = lr0 + lls;
-                                    if ( lr > kr || ( ir == kr && lr > jr) ) break;
-                                    (sints+knt)->val=0.0;
-                                    (sints+knt)->i=(unsigned int)ir;
-                                    (sints+knt)->j=(unsigned int)jr;
-                                    (sints+knt)->k=(unsigned int)kr;
-                                    (sints+knt)->l=(unsigned int)lr;
-                                    unsigned int l12 = (ils<<UNO_SHIFT) + jls;
-                                    if (switch12) l12=(jls<<UNO_SHIFT)+ils;
-                                    unsigned int l34=(kls<<UNO_SHIFT)+lls;
-                                    if (switch34) l34=(lls<<UNO_SHIFT)+kls;
-                                    sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
-                                    sq.norms[knt] =
-                                         aux.normalization_factor(lv1,ils)*
-                                         aux.normalization_factor(lv2,jls)*
-                                         aux.normalization_factor(lv3,kls)*
-                                         aux.normalization_factor(lv4,lls);                     
-                                    ++knt;
-                                }
-                            }
-                        }
-                    }
-                    if (!knt) continue;
+
+                    sq.assign_four(shell[lsh],(center+cen4)->r_vec());
+                    sq.swap_34();
+                    int knt= sq.precalculate(offs,aux,sints);
+                    if (!knt) break;
+
                     ncalc += knt;
                     sq.len=knt;
 #ifdef UNOMOL_MD_INTS                    
@@ -671,7 +589,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                             cache.write(sints+kc,1);
                         }
                     }
-                    if (switch34) {
+                    if (sq.sw34) {
                         sq.npr3=sq.npr4;
                         sq.lv3=sq.lv4;
                         sq.al3=sq.al4;
@@ -680,7 +598,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                     }
                 }
             }
-            if (switch12) {
+            if (sq.sw12) {
                 sq.npr1=sq.npr2;
                 sq.lv1=sq.lv2;
                 sq.al1=sq.al2;
@@ -699,7 +617,7 @@ TwoElectronInts::calculate(const Basis& basis) {
 }
 
 void
-TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
+TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) noexcept {
     constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 
@@ -816,7 +734,7 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
 
 void
 TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
-                             double *GmatA,double *GmatB) {
+                             double *GmatA,double *GmatB) noexcept {
     constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 
