@@ -4,8 +4,8 @@ namespace unomol {
 
 #define UNO_MASK 0xF
 #define UNO_SHIFT 4U
-#define UNO_SHIFT2 8U
-
+#define UNO_SHIFT2 8
+  
 #define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
@@ -493,6 +493,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         const int jls=key&UNO_MASK;
                         key>>=UNO_SHIFT;
                         const int ils=key&UNO_MASK;
+
                         const int *lv1 = aux.l_vector(sq.lv1,ils);
                         const int *lv2 = aux.l_vector(sq.lv2,jls);
                         const int *lv3 = aux.l_vector(sq.lv3,kls);
@@ -540,27 +541,42 @@ TwoElectronInts::calculate(const Basis& basis) noexcept {
     putils::Stopwatch timer;
     timer.start();
     int ncalc = 0;
+
     int offs[4];
+
     for (int ish=start; ish<nshell; ++ish) {
-        offs[0] = basis.offset(ish);
+        int ir0 = basis.offset(ish);
+        sq.npr1=(shell+ish)->number_of_prims();
+        sq.lv1=(shell+ish)->Lvalue();
         int cen1=(shell+ish)->center();
+
         sq.assign_one(shell[ish],(center+cen1)->r_vec());
+
         for (int jsh=0; jsh<=ish; ++jsh) {
-            offs[1] = basis.offset(jsh);
+            int jr0 = basis.offset(jsh);
+            sq.npr2=(shell+jsh)->number_of_prims();
+            sq.lv2=(shell+jsh)->Lvalue();
             int cen2=(shell+jsh)->center();
             sq.assign_two(shell[jsh],(center+cen2)->r_vec());
             sq.swap_12();
+
             for (int ksh=0; ksh<=ish; ++ksh) {
-                offs[2] = basis.offset(ksh);
+                int kr0 = basis.offset(ksh);
+                sq.npr3=(shell+ksh)->number_of_prims();
+                sq.lv3=(shell+ksh)->Lvalue();
                 int cen3=(shell+ksh)->center();
                 sq.assign_three(shell[ksh],(center+cen3)->r_vec());
                 for (int lsh=0; lsh<=ksh; ++lsh) {
-                    offs[3] = basis.offset(lsh);
+                    int lr0 = basis.offset(lsh);
+                    sq.npr4=(shell+lsh)->number_of_prims();
+                    sq.lv4=(shell+lsh)->Lvalue();
                     int cen4=(shell+lsh)->center();
+
                     sq.assign_four(shell[lsh],(center+cen4)->r_vec());
                     sq.swap_34();
                     int knt= sq.precalculate(offs,aux,sints);
                     if (!knt) break;
+
                     ncalc += knt;
                     sq.len=knt;
 #ifdef UNOMOL_MD_INTS                    
@@ -573,10 +589,22 @@ TwoElectronInts::calculate(const Basis& basis) noexcept {
                             cache.write(sints+kc,1);
                         }
                     }
-                    sq.unswap_34();
+                    if (sq.sw34) {
+                        sq.npr3=sq.npr4;
+                        sq.lv3=sq.lv4;
+                        sq.al3=sq.al4;
+                        sq.co3=sq.co4;
+                        sq.c=sq.d;
+                    }
                 }
             }
-            sq.unswap_12();
+            if (sq.sw12) {
+                sq.npr1=sq.npr2;
+                sq.lv1=sq.lv2;
+                sq.al1=sq.al2;
+                sq.co1=sq.co2;
+                sq.a=sq.b;
+            }
         }
     }
     timer.stop();

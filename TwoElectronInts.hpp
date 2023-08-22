@@ -17,10 +17,6 @@
 
 namespace unomol {
 
-#define UNO_MASK 0xF
-#define UNO_SHIFT 4U
-#define UNO_SHIFT2 8U
-
 struct TwoInts {
     double val;
     int i,j,k,l;
@@ -44,14 +40,11 @@ struct ShellQuartet {
     int npr4,lv4;
     const double *al4;
     const double *co4;
-    double ab[3];
-    double cd[3];
     double * norms;
     unsigned int *lstates;
     unsigned int maxints;
     int len;
-    bool sw12,sw34;
-     
+    
     ShellQuartet(int maxl) {
         int maxlst = ((maxl+1)*(maxl+2))/2;
         maxints = maxlst * maxlst * maxlst * maxlst;
@@ -253,6 +246,7 @@ struct ShellQuartet {
                     len = knt;
                     return len;
       }
+
 
 };
 
