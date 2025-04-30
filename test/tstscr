@@ -1,3 +1,4 @@
+cp ../Unomol .
 cp patin.dat.3g.h2 patin.dat
 ./Unomol
 mv scfout.gs.out scfout.out.3g.h2
