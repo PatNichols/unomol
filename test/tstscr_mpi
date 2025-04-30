@@ -1,3 +1,4 @@
+cp ../UnomolMPI .
 cp patin.dat.3g.h2 patin.dat
 mpirun -n 4 ./UnomolMPI
 mv scfout.gs.out scfout.out.3g.h2
