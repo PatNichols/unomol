@@ -15,11 +15,11 @@ using namespace std;
 namespace unomol {
 
 class Shell {
-  private:
+private:
     int npr,lsh,cen;
     double* al;
     double* co;
-  public:
+public:
     Shell():npr(0),lsh(0),cen(0),al(0),co(0) {};
     Shell(const Shell& rs):npr(rs.npr),lsh(rs.lsh),cen(rs.cen),
         al(new double[npr]),co(new double[npr]) {
@@ -74,6 +74,27 @@ class Shell {
         }
     };
 
+    std::istream& read_shell(std::istream& is, int cen_in = -1)
+    {
+        is >> npr;
+        is >> lsh;
+        if ( cen == -1)
+        {
+            is >> cen;
+        } else {
+            cen = cen_in;
+        }
+        if (co) delete [] co;
+        if (al) delete [] al;
+        al=new double[npr];
+        co=new double[npr];
+        for (int i=0; i<npr; ++i) {
+            is>>al[i];
+            is>>co[i];
+        }
+        return is;
+    }
+
     friend std::ostream& operator << ( std::ostream& os,
                                        const Shell& sh) {
         os<<std::setw(3)<<sh.npr<<sh.lsh<<sh.cen<<endl;
@@ -87,26 +108,16 @@ class Shell {
 
     friend std::istream& operator >> ( std::istream& is,
                                        Shell& sh) {
-        is>>sh.npr;
-        is>>sh.lsh;
-        is>>sh.cen;
-        if (sh.co) delete [] sh.co;
-        if (sh.al) delete [] sh.al;
-        sh.al=new double[sh.npr];
-        sh.co=new double[sh.npr];
-        for (int i=0; i<sh.npr; ++i) {
-            is>>sh.al[i];
-            is>>sh.co[i];
-        }
-        return is;
+        return sh.read_shell(is);
     }
+
 };
 
 class Center {
-  private:
+private:
     double chg;
     double r[3];
-  public:
+public:
     Center() {
         chg=0.0;
         r[2]=r[1]=r[0]=0.0;
@@ -155,7 +166,7 @@ class Center {
 };
 
 class Basis {
-  private:
+private:
     Shell* shells;
     Center* centers;
     AuxFunctions* aux;
@@ -166,7 +177,7 @@ class Basis {
     int scf_flag[3];
     int int_flag[3];
     int prt_flag[4];
-  public:
+public:
     Basis(const std::string& infile=string("patin.dat")):
         shells(nullptr),centers(nullptr),aux(nullptr),offsets() {
         int xsh,xno,xmaxl;
@@ -224,9 +235,8 @@ class Basis {
         if (int_flag[0]==1) {
             (centers+ncen)->setCharge(1.0000000000000000000);
             (centers+ncen)->setPosition(0.0,0.0,0.0);
-            for (int ish=nshell;ish<tnshell;++ish) {
-                ain >> shells[ish];
-                shells[ish].setCenter(ncen);
+            for (int ish=nshell; ish<tnshell; ++ish) {
+                shells[ish].read_shell(ain,ncen);
                 int lv = shells[ish].Lvalue();
                 offsets.push_back(off);
                 off += (lv+1)*(lv+2)/2;
@@ -290,15 +300,29 @@ class Basis {
     constexpr int int_flags(int i) const noexcept {
         return int_flag[i];
     }
-    
-    constexpr int do_dpm() const noexcept { return int_flag[0];}
-    constexpr int do_ffa() const noexcept { return int_flag[1];}
-    constexpr int scf_accel() const noexcept { return scf_flag[1];}
-    constexpr int scf_guess() const noexcept { return scf_flag[2];}
-    constexpr int scf_convegence_type() const noexcept { return scf_flag[0];}
-    constexpr int print_eigvecs() const noexcept { return prt_flag[0];}
-    constexpr int print_mullpop_overlaps() const noexcept { return prt_flag[2];}
-    
+
+    constexpr int do_dpm() const noexcept {
+        return int_flag[0];
+    }
+    constexpr int do_ffa() const noexcept {
+        return int_flag[1];
+    }
+    constexpr int scf_accel() const noexcept {
+        return scf_flag[1];
+    }
+    constexpr int scf_guess() const noexcept {
+        return scf_flag[2];
+    }
+    constexpr int scf_convegence_type() const noexcept {
+        return scf_flag[0];
+    }
+    constexpr int print_eigvecs() const noexcept {
+        return prt_flag[0];
+    }
+    constexpr int print_mullpop_overlaps() const noexcept {
+        return prt_flag[2];
+    }
+
     constexpr const Shell* shell_ptr() const noexcept {
         return shells;
     }
