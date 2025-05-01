@@ -58,8 +58,7 @@ void calc_gdpm_ints(
                 qc[0] = q[0] - sq.a[0];
                 qc[1] = q[1] - sq.a[1];
                 qc[2] = q[2] - sq.a[2];
-//                rys.Recur(p,q,pa,qc,pxp,qxp,txp,lvt12,lvt34,nroots);
-                rys.Recur(p,q,p,qc,pxp,qxp,txp,0,lvt12,nroots);
+                rys.Recur(p,q,pzero,qc,pxp,qxp,txp,0,lvt12,nroots);
                 for (int kc=0; kc<sq.len; ++kc) {
                     auto key=sq.lstates[kc];
                     int jls=key&0xF;
