@@ -12,7 +12,7 @@ int main()
     in.close();
     std::cout << "# of points = " << mesh.num_points() << "\n";
     std::cout << "# of regions = " << mesh.num_regions() << "\n";
-    std::ofstream out("posin.dat");
+    std::ofstream out("pos.grid.dat");
     std::vector<double> rpts;
     mesh.fill_points(rpts);
     out << std::setw(12) << mesh.num_points() << "\n";
