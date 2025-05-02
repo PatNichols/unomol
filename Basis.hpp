@@ -78,7 +78,7 @@ public:
     {
         is >> npr;
         is >> lsh;
-        if ( cen == -1)
+        if ( cen_in == -1)
         {
             is >> cen;
         } else {
