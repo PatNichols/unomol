@@ -1,0 +1,136 @@
+ basis name is sapporo-qzp-2012.1
+ZZ #----------------------------------------------------------------------
+ZZ # Basis Set Exchange
+ZZ # Version 0.11
+ZZ # https://www.basissetexchange.org
+ZZ #----------------------------------------------------------------------
+ZZ #   Basis set: Sapporo-QZP-2012
+ZZ # Description:
+ZZ #        Role: orbital
+ZZ #     Version: 1  (Data from T. Noro)
+ZZ #----------------------------------------------------------------------
+ZZ 
+ZZ 
+ZZ BASIS "ao basis" SPHERICAL PRINT
+->-> begin found
+ZZ #BASIS SET: (8s,4p,3d,2f) -> [4s,3p,2d,1f]
+ZZ He    S
+read He S
+
+different atom
+
+ZZ    1144.6468668              0.0016520
+xxx 1144.6468668  0.0016520
+ZZ     171.6461943              0.0127728
+xxx 171.6461943  0.0127728
+ZZ      39.0659544              0.0656121
+xxx 39.0659544  0.0656121
+ZZ      11.0513343              0.2554914
+xxx 11.0513343  0.2554914
+ZZ       3.5725326              0.7449704
+xxx 3.5725326  0.7449704
+ZZ He    S
+read He S
+
+same atom new basis
+
+new shell :    5   0
+      1144.6468668000         0.0016520000
+       171.6461943000         0.0127728000
+        39.0659544000         0.0656121000
+        11.0513343000         0.2554914000
+         3.5725326000         0.7449704000
+
+ZZ       1.2429351              1.0000000
+xxx 1.2429351  1.0000000
+ZZ He    S
+read He S
+
+same atom new basis
+
+new shell :    1   0
+         1.2429351000         1.0000000000
+
+ZZ       0.4480750              1.0000000
+xxx 0.4480750  1.0000000
+ZZ He    S
+read He S
+
+same atom new basis
+
+new shell :    1   0
+         0.4480750000         1.0000000000
+
+ZZ       0.1641154              1.0000000
+xxx 0.1641154  1.0000000
+ZZ He    P
+read He P
+
+same atom new basis
+
+new shell :    1   0
+         0.1641154000         1.0000000000
+
+ZZ      19.3454490              0.0818050
+xxx 19.3454490  0.0818050
+ZZ       4.8179070              0.9510479
+xxx 4.8179070  0.9510479
+ZZ He    P
+read He P
+
+same atom new basis
+
+new shell :    2   1
+        19.3454490000         0.0818050000
+         4.8179070000         0.9510479000
+
+ZZ       1.6506250              1.0000000
+xxx 1.6506250  1.0000000
+ZZ He    P
+read He P
+
+same atom new basis
+
+new shell :    1   1
+         1.6506250000         1.0000000000
+
+ZZ       0.5448140              1.0000000
+xxx 0.5448140  1.0000000
+ZZ He    D
+read He D
+
+same atom new basis
+
+new shell :    1   1
+         0.5448140000         1.0000000000
+
+ZZ       8.0451280              0.1720410
+xxx 8.0451280  0.1720410
+ZZ       2.8322500              0.8821268
+xxx 2.8322500  0.8821268
+ZZ He    D
+read He D
+
+same atom new basis
+
+new shell :    2   2
+         8.0451280000         0.1720410000
+         2.8322500000         0.8821268000
+
+ZZ       1.0482740              1.0000000
+xxx 1.0482740  1.0000000
+ZZ He    F
+read He F
+
+same atom new basis
+
+new shell :    1   2
+         1.0482740000         1.0000000000
+
+ZZ       3.7903690              0.4074172
+xxx 3.7903690  0.4074172
+ZZ       1.2924980              0.7203303
+xxx 1.2924980  0.7203303
+ZZ END
+writing basis
+->-> end found

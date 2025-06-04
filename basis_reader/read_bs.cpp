@@ -1,0 +1,222 @@
+
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <cstdlib>
+#include <cmath>
+
+inline int convert_to_l(char ch)
+{
+    std::string lch("SPDFGHIKM");
+    size_t l = lch.find(ch);
+    if ( l == std::string::npos)
+    {
+        std::cout << "the character " << ch << " does not correspond"
+            " to a valid L value\n";
+        exit(-1); 
+    }
+    return l;
+}
+
+std::size_t tokenize_string(
+    const std::string& str,
+    const std::string& delims,
+    std::vector<std::string>& tokens)
+{
+    tokens.clear();
+    std::size_t beg = 0;
+    std::size_t fin = 0;
+    beg = str.find_first_not_of(delims,fin);
+    fin = str.find_first_of(delims,beg);
+    while ( beg!=std::string::npos)
+    {
+        tokens.push_back(str.substr(beg,fin-beg));
+        beg = str.find_first_not_of(delims,fin);
+        fin = str.find_first_of(delims,beg);
+    }
+    return tokens.size();
+}
+
+struct Shell
+{
+    int npr;
+    int lsh;
+    std::vector<double> alf;
+    std::vector<double> cof;
+};
+
+std::ostream& operator << ( std::ostream& os, const Shell& sh)
+{
+    os << " " << sh.npr << " " << sh.lsh << "\n";
+    for (int k=0;k<sh.npr;++k)
+    {
+        os << " ";
+        os << sh.alf[k] << " " << sh.cof[k] << "\n";
+    }
+    return os;
+}
+
+
+void arrange_shells(std::vector<double>& alf,std::vector<double>& cof,
+    const std::string& angstr, std::vector<Shell>& shells)
+{
+    int lsh = 0;
+    size_t np = alf.size();
+    size_t ns = cof.size() / np;
+    if ( cof.size() % np )
+    {
+        std::cerr << "alf size = " << np << " but cof size = " << cof.size();
+        std::cerr << " is not a multiple\n";
+        exit(-1);
+    }
+    if (angstr.size() == 1)
+    {
+        lsh = convert_to_l(angstr[0]); 
+    }else{
+        std::cerr << "angstr " << angstr << " cannot be processed\n";
+        exit(-1);
+    }
+    for (size_t k=0;k<ns;++k)
+    {
+        Shell sh;
+        sh.npr = np;
+        sh.alf = std::move(std::vector<double>(np));
+        sh.cof = std::move(std::vector<double>(np));
+        sh.lsh = lsh;
+        int j = k;
+        for (int i=0;i<sh.npr;++i)
+        {
+            double co = cof[j + i * ns];
+            if (fabs(co) < 1.e-14) continue;
+            sh.alf[i] = alf[i];
+            sh.cof[i] = cof[j + i * ns];
+        }
+        std::cerr << sh << "\n";
+        shells.push_back(sh);
+    }
+}
+
+void write_basis(
+    std::ostream& os,
+    std::vector<Shell>& shells,const std::string atom,
+    const std::string desc)
+{
+    os << atom << ":" << desc << "\n";
+    os << std::setw(3);
+    os << shells.size() << "\n";
+    for (const Shell& sh : shells)
+    {
+        os << std::setw(3);
+        os << sh.npr << " ";
+        os << std::setw(3) << sh.lsh << "\n";
+        for (size_t k=0;k<sh.npr;++k)
+        {
+            os << std::setw(20) << std::setprecision(10) << std::fixed;
+            os << sh.alf[k] << " ";
+            os << std::setw(20) << std::setprecision(10) << std::fixed;
+            os << sh.cof[k] << "\n";
+        }
+    }
+}
+
+int main(int argc,char **argv)
+{
+    if (argc != 2)
+    {
+        std::cout << "usage is ./basis_convert filename\n";
+        exit(-1);
+    }
+    std::string fname(argv[1]);
+    std::ifstream is(fname.c_str());
+    if (!is)
+    {
+        std::cerr << "could not open " << fname << " for reading\n";
+        exit(-1);
+    }
+
+    std::size_t fnd = fname.find(".nw");
+    std::string basis_name = fname.substr(0,fnd);
+    std::cerr << " basis name is " << basis_name << "\n";
+    std::string outname("newbas.out");
+    std::ofstream os(outname.c_str());
+    if (!os)
+    {
+        std::cerr << "could not open " << outname << " for output\n";
+        exit(-1);
+    }     
+    std::string sline;
+    std::string delims(" \n");
+    std::vector<std::string> tokens;
+    std::string atom("");
+    std::string ang_str;
+    std::size_t nshells=0;
+    std::size_t npr = 0;
+    std::vector<Shell> shells;
+    std::vector<Shell> tmp_shells;
+    std::vector<double> alf;
+    std::vector<double> cof;
+    std::string end_str("END");
+    std::string beg_str("BASIS");
+    while (is)
+    {
+        if (!std::getline(is,sline) )
+        {
+            if (is.eof()) break;
+            std::cerr << "read error in fname\n";
+            exit(-1);
+        }
+        std::cerr << "ZZ " << sline << "\n";
+        if (sline.size()==0) continue; // blank line
+        if (sline[0] == '#') continue; // comment line
+        if (sline.find(beg_str)==0) {
+            shells.clear();
+            atom.clear();
+            std::cout << "begin\n";
+            continue; // begin line
+        }
+        if (sline.find(end_str)==0) {
+            if ( shells.size()) {
+                std::cout << "writing basis\n";
+                write_basis(os,shells,atom,basis_name);
+            }
+            break; // end line
+        }
+        std::size_t ntokens = tokenize_string(sline,delims,tokens);
+        if (isalpha(sline[0])) {
+            std::string atom_str = tokens[0];
+            std::string new_ang_str = tokens[1];
+            if (atom.compare(atom_str)) {
+            // new atom for basis set
+            // write out old atomic basis set  
+                if ( atom.size()) {
+                    std::cout << "writing basis\n";
+                    write_basis(os,shells,atom,basis_name);
+                }
+                atom = atom_str;
+                ang_str = new_ang_str;
+                alf.clear();
+                cof.clear();
+                shells.clear();
+            }else{
+            // same atom but different shell
+            // add old shell to collection
+                if ( alf.size()) {
+                    arrange_shells(alf,cof,ang_str,shells);
+                }
+                alf.clear();
+                cof.clear();
+                ang_str = new_ang_str;
+            }
+        }else{
+            alf.push_back(std::stod(tokens[0]));
+            for (std::size_t k=1;k<ntokens;++k)
+            {
+                cof.push_back(std::stod(tokens[k]));
+            }
+        }                                
+    }
+    os.close();
+    is.close();
+}

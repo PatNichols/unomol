@@ -1,0 +1,214 @@
+#include <cstdlib>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
+#include <iomanip>
+#include "putils_cxx.hpp"
+
+namespace unomol
+{
+void format_error()
+{
+    std::cerr << "format error in input file\n";
+    exit(-1);
+}
+
+bool is_double(const std::string& s)
+{
+    try {
+        double d = std::stod(s);
+        return true;
+    } catch (std::exception& e) {
+        return false;
+    }
+}
+
+struct cc_shell_t
+{
+    std::vector<int> lvals;
+    std::vector<double> alf;
+    std::vector<double> cof;
+};
+
+struct basis_set
+{
+    std::string atom;
+    std::vector<cc_shell_t> shells;
+};
+
+std::vector<int> ang_str_to_lvals(std::string& str)
+{
+    std::string lstr("SPDFGHIJKL");
+    std::vector<int> lsh;
+    for ( char ch : str) {
+        size_t p = lstr.find(ch);
+        if ( p !=std::string::npos) {
+            lsh.push_back(static_cast<int>(p));
+        } else {
+            format_error();
+        }
+    }
+    return lsh;
+}
+
+basis_set read_basis_set(std::istream& is,int& is_end)
+{
+    std::string sline;
+    std::string delims(" \n");
+    std::vector<std::string> tokens;
+    is_end = 0;
+    size_t ncon = 0;
+    basis_set bset;
+
+    if (!std::getline(is,sline))
+    {
+        return bset;
+    }
+
+    std::cerr <<" D " << sline << "\n";
+
+    if (sline[0] == '#' || sline.find("END")!=std::string::npos) {
+        return bset;
+    }
+    size_t ntokens = putils::tokenize_string(sline,delims,tokens);
+    cc_shell_t sh;
+    if ( ntokens == 2) {
+        if (is_double(tokens[0])) {
+            format_error();
+        }
+        bset.atom = tokens[0];
+        sh.lvals = ang_str_to_lvals(tokens[1]);
+        ncon = sh.lvals.size();
+    } else {
+        format_error();
+    }
+    while (is) {
+        std::getline(is,sline);
+        std::cerr <<" D " << sline << "\n";
+        if (sline[0] == '#') {
+            return bset;
+        } else {
+            if (sline.find("END") != std::string::npos) {
+                is_end = 1;
+                return bset;
+            }
+        }
+        size_t ntokens = putils::tokenize_string(sline,delims,tokens);
+        if ( sline.find(bset.atom) == std::string::npos) {
+            // same shell add primitives
+            if ( ntokens != (ncon+1)) format_error();
+            double a = std::stod(tokens[0]);
+            sh.alf.push_back(a);
+            for (auto k=0; k<ncon; ++k) {
+                double c = std::stod(tokens[k+1]);
+                sh.cof.push_back(c);
+            }
+        } else {
+            // new shell
+            bset.shells.push_back(sh);
+            sh.alf.clear();
+            sh.cof.clear();
+            if (bset.atom!=tokens[0]) format_error();
+            sh.lvals = ang_str_to_lvals(tokens[1]);
+            ncon = sh.lvals.size();
+        }
+    }
+    if (is.eof()) {
+        is_end = 1;
+        std::cerr << "missing END in files\n";
+        return bset;
+    }
+    return bset;
+}
+
+std::vector<basis_set> read_file(std::ifstream& is)
+{
+    std::string sline;
+    std::string delims(" \n");
+    std::vector<std::string> tokens;
+    std::vector<basis_set> sets;
+    while (is) {
+        std::getline(is,sline);
+        std::cerr <<" D " << sline << "\n";
+        if (sline.size() == 0) continue;
+        if (sline[0] == '#') continue;
+        if ( sline.find("BASIS") == 0) break;
+    }
+    std::getline(is,sline);
+    std::cerr << "D broke loop\n";
+    if (!is) {
+        std::cerr << "read error in preamble\n";
+        format_error();
+    }
+    if (is.eof()) {
+        std::cerr << "missing END in files\n";
+        return sets;
+    }
+    std::cerr << "read preamble\n";
+    int ended;
+    while (is) {
+        std::cerr << "reading basis set\n";
+        basis_set bset = read_basis_set(is,ended);
+        sets.push_back(bset);
+        if (ended) return sets;
+    }
+    if ( is.eof()) {
+        std::cerr << "file has no end\n";
+        return sets;
+    }
+    std::cerr << "read error in file\n";
+    exit(-1);
+    return sets;
+}
+
+void translate_to_uncontracted(std::ofstream& os,const std::vector<basis_set>& sets)
+{
+    for ( const basis_set& set : sets) {
+        os << set.atom << "\n";
+        for ( const cc_shell_t sh : set.shells) {
+            size_t ncon = sh.lvals.size();
+            size_t npr = sh.alf.size();
+            for (size_t k=0; k<ncon; ++k) {
+                os << npr << " " << sh.lvals[k] << "\n";
+                for (size_t j=0; j<npr; ++j) {
+                    os << "    ";
+                    os << sh.alf[j] << " ";
+                    os << sh.cof[j*ncon+k] << "\n";
+                }
+            }
+        }
+        os << "###################\n";
+    }
+}
+
+}
+
+using namespace unomol;
+int main(int argc,char **argv)
+{
+    if ( argc == 1) {
+        std::cerr << "usage is : program bsis_file_name\n";
+        exit(-1);
+    }
+    std::string input_file(argv[1]);
+    size_t p = input_file.find(".");
+    std::string output_file = input_file.substr(0,p) + ".lib";
+    std::ifstream in(input_file.c_str());
+    if (!in) {
+        std::cerr << "could not open " << input_file << "\n";
+        exit(-1);
+    }
+    std::cout << "reading " << input_file << "\n";
+    std::vector<basis_set> sets = read_file(in);
+    std::ofstream out(output_file.c_str());
+    if (!out) {
+        std::cerr << "could not open output file  " << output_file << "\n";
+        exit(-1);
+    }
+    std::cout << "writing " << output_file << "\n";
+    translate_to_uncontracted(out,sets);
+    out.close();
+    return EXIT_SUCCESS;
+}

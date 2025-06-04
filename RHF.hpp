@@ -155,6 +155,12 @@ class RestrictedHartreeFock {
         fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
         fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
         iteration=2;
+        update();
+        fprintf(stderr,"Iteration     =  %6d\n",iteration);
+        fprintf(stderr,"Energy        =  %25.16le\n",(eold+nucrep));
+        fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
+        fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
+        iteration=3;
         while (iteration<maxits) {
             scf_converger();
             update();
@@ -292,6 +298,7 @@ class RestrictedHartreeFock {
     void findPolarizationPotential() {
         double px,py,pz;
         const string xstr("XINTS.DAT");
+        const double nucrep_gs = nucrep;
         int sshell=nshell;
         nshell=tnshell;
         no=tno;
@@ -301,27 +308,47 @@ class RestrictedHartreeFock {
         int npts;
         basis.dpm_augment();
         eps=1.e-12;
+        double * hdpm = new double[no2];
         ////////////////////////////////////////////////////////
         // start calculation
         std::ifstream in("pos.grid.dat");
+        if (!in)
+        {
+            std::cerr << "could not open pos.grid.dat\n";
+            exit(-1);
+        }
         in >> npts;
         in >> px;
         in >> py;
         in >> pz;
         basis.SetCenterPosition(px,py,pz,pcen);
-        nucrep=nuclear_repulsion_energy(ncen,
-                                        basis.center_ptr());
+        nucrep=calc_dpm_nucrep(basis.center_ptr(),basis.number_of_centers(),pcen);
+        std::cerr << "positron nucrep = " << nucrep << "\n";
+        nucrep += nucrep_gs;
         TwoElectronInts xints(basis,sshell,xstr);
         OneElectronInts(basis,Smat,Tmat,Hmat);
-        GDPMInts(basis,Hmat);
-        OintsOutput();
-        formXmatrix();
+#ifdef PAT_DBUG
+        std::cerr << "caclulation gdpmints\n";
+#endif
         memcpy(Pmat,PmatGs,sizeof(double)*no2);
+        memset(hdpm,0x0,sizeof(double)*no2);
+        GDPMInts(basis,hdpm);
+        double ex = SymmPack::TraceSymmPackProduct(Pmat,hdpm,no)*2.0;
+        std::cerr << "positron electron attraction = " << ex << "\n";
+        for (size_t k=0;k<no2;++k) Hmat[k] += hdpm[k];
+#ifdef PAT_DBUG[A
+
+        OintsOutput();
+        std::cerr << "form xmatrix\n";
+#endif
+        formXmatrix();
         iteration=0;
         extrap=0;
         eold=0.0;
         update(&xints);
         double init_energy=energy+nucrep;
+        update(&xints);
+        iteration = 2;
         while (iteration<maxits) {
             scf_converger();
             update(&xints);
@@ -345,23 +372,63 @@ class RestrictedHartreeFock {
             in >> px;
             in >> py;
             in >> pz;
+#ifdef PAT_DBUG
+            std::cerr << px << " " << py << " " << pz << "\n";
+#endif
             basis.SetCenterPosition(px,py,pz,pcen);
-            nucrep=nuclear_repulsion_energy(basis.number_of_centers(),
-                                            basis.center_ptr());
+//            nucrep=nuclear_repulsion_energy(basis.number_of_centers(),
+//                                            basis.center_ptr());
+            nucrep=calc_dpm_nucrep(basis.center_ptr(),basis.number_of_centers(),pcen);
+            std::cerr<<" dpm nucrep = " << nucrep << "\n";
+            nucrep += nucrep_gs;
+#ifdef PAT_DBUG
+            std::cerr << "ONE INTS\n";
+#endif
             xints.recalculate(basis);
+#ifdef PAT_DBUG
+            std::cerr << "TWO INTS\n";
+#endif
             OneElectronInts(basis,Smat,Tmat,Hmat);
-            GDPMInts(basis,Hmat);
-            formXmatrix();
+#ifdef PAT_DBUG
+            std::cerr << "caclulation gdpmints\n";
+#endif
             memcpy(Pmat,PmatGs,sizeof(double)*no2);
+            memset(hdpm,0x0,sizeof(double)*no2);
+            GDPMInts(basis,hdpm);
+            double ex = SymmPack::TraceSymmPackProduct(Pmat,hdpm,no)*2.0;
+            std::cerr << "positron electron attraction = " << ex << "\n";
+            for (size_t k=0;k<no2;++k) Hmat[k] += hdpm[k];
+#ifdef PAT_DBUG
+            std::cerr << "form xmatrix\n";
+#endif
+            formXmatrix();
+#ifdef PAT_DBUG
+            std::cerr << "start scf\n";
+#endif
             iteration=0;
             extrap=0;
             eold=0.0;
             update(&xints);
+            fprintf(stderr,"Iteration     =  %6d\n",iteration);
+            fprintf(stderr,"Energy        =  %25.16le\n",(eold+nucrep));
+            fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
+            fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
             double init_energy=energy+nucrep;
+            update(&xints);
+            fprintf(stderr,"Iteration     =  %6d\n",iteration);
+            fprintf(stderr,"Energy        =  %25.16le\n",(eold+nucrep));
+            fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
+            fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
+            iteration=2;
             while (iteration<maxits) {
                 scf_converger();
                 update(&xints);
                 if (is_converged()) break;
+                update(&xints);
+                fprintf(stderr,"Iteration     =  %6d\n",iteration);
+                fprintf(stderr,"Energy        =  %25.16le\n",(eold+nucrep));
+                fprintf(stderr,"Delta Energy  =  %25.15le\n",ediff);
+                fprintf(stderr,"Delta Density =  %25.15le\n\n",pdiff);
             }
             final_energy=energy+nucrep;
             vpol=final_energy-init_energy;
@@ -378,20 +445,22 @@ class RestrictedHartreeFock {
         fclose(vout);
         fclose(sout);
         in.close();
+        delete [] hdpm;
     }
 
     constexpr bool is_converged() noexcept {
         switch (cflag) {
         case 0:
-            if (ediff<eps) return true;
-            return false;
+            if (fabs(ediff)<=eps) return true;
+            break;
         case 1:
-            if (pdiff<eps) return true;
-            return false;
+            if (pdiff<=eps) return true;
+            break;
         default:
-            if (pdiff<eps && ediff<eps) return true;
-            return false;
+            if (pdiff<=eps && fabs(ediff)<=eps) return true;
+            break;
         }
+        return false;
     }
 
     void final_output(double init_energy) {

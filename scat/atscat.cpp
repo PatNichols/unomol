@@ -40,9 +40,12 @@
 #include <cmath>
 #include <cfloat>
 #include <iomanip>
+#include <vector>
 
 // the value of a Rydberg in eV from NIST
 #define RYDBERG 13.60569171
+#define BOHR 0.5291772083 //number of Angstroms per Bohr
+
 // small constant very approx equal to DBL_EPSILON
 #define eps 1.e-15
 #define SCAT_HUGE 1.e100 // default potential when r is about zero
@@ -383,10 +386,9 @@ public:
     {
         double v;
         if (r<=maxr) {
-            if ( r>=minr) {
-                return sfit->value(r);
-            }        
-            return SCAT_HUGE;
+            v = sfit->value(r);
+            if ( std::isnan(v) ) return SCAT_HUGE;
+            return v;
         }
         double r2=r*r;
         return (-alf/r2/r2);
@@ -402,7 +404,7 @@ public:
         for (int i=0; i<pot.npts; i++) {
             in >> rp[i];
             in >> vp[i];
-            vp[i]*=2.0;
+//            vp[i]*=2.0;
         }
         pot.minr = rp[0];
         if (pot.sfit) delete pot.sfit;
@@ -622,42 +624,50 @@ inline double si(double x) {
 ///////////////////////////////////////////////////
 void do_calculation(double energy,const sph_potential& scat_pot, const radial_mesh& mesh,
                    double& shift,double& xsec,
-                    const double& tolerance,int l)
+                    const double& tolerance,int l,int ie=-1)
 {
     double rstop,atal,sphj,sphn;
     const double pi4 = 12.566370614359172; // 4*pi
-
+    std::vector<double> up;
+    std::vector<double> rp;
     energy/=RYDBERG;
     double k=sqrt(energy);
     bool endit=false;
     size_t ncheck=0;
+    double lfact=l*(l+1);
+    double trap1 = 0.0;
+    double trap2 = 0.0;
     double sum1 = 0.0;
     double sum2 = 0.0;
-    double lfact=l*(l+1);
-    double rs = mesh.rstart(0);
-    sphbess(sphj,sphn,k*rs,l);
-    double u = sphj * k;
-    double v = scat_pot(rs);
-    double dr = mesh.deltar(0);;
-    double prod = u * v * rs * dr  * 0.5;
-    double trap1 = prod * sphj * k;
-    double trap2 = prod * sphn;
+    double u = 0.0;
+    double v = 0.0;
     size_t nreg = mesh.num_regions();
     for (int ir=0; ir<nreg; ir++) {
-        rs=mesh.rstart(ir);
-        dr=mesh.deltar(ir);
-        size_t ns=mesh.nsteps(ir);
-        prod = rs * u * v * dr * 0.5;
-        trap1 = prod * sphj * k;
-        trap2 = prod * sphn;
-        for (int is=1; is<=ns; is++) {
+        double rs = mesh.rstart(ir);
+        double dr = mesh.deltar(ir);
+        int ns = mesh.nsteps(ir);
+        sphbess(sphj,sphn,k*rs,l);
+        u=k*rs*sphj*(1.0-sum2)+rs*sphn*sum1;
+        up.push_back(u);
+        rp.push_back(rs);
+        // add endpoint contribution from last region
+        sum1 += trap1;
+        sum2 += trap2;
+        // add end point contribution from this region
+        v = scat_pot(rs);
+        double prod=rs*u*v*dr * 0.5;
+        trap1=k*prod*sphj;
+        trap2=sphn*prod;
+        sum1 += trap1;
+        sum2 += trap2;
+        for (int is=1; is<ns; is++) {
             double r = rs + is * dr;
             sphbess(sphj,sphn,k*r,l);
             u=k*r*sphj*(1.0-sum2)+r*sphn*sum1;
-            sum1 += trap1;
-            sum2 += trap2;
+            up.push_back(u);
+            rp.push_back(r);
             v=scat_pot(r);
-            prod=r*u*v*dr*0.5;
+            prod=r*u*v*dr;
             trap1=k*prod*sphj;
             trap2=sphn*prod;
             sum1 += trap1;
@@ -681,6 +691,13 @@ void do_calculation(double energy,const sph_potential& scat_pot, const radial_me
             ncheck=0;
         }
         if (endit) break;
+        // end point contribution
+        rs = mesh.rstart(ir+1);
+        sphbess(sphj,sphn,k*rs,l);
+        v=scat_pot(rs);
+        prod=rs*u*v*dr*0.5;
+        trap1=k*prod*sphj;
+        trap2=sphn*prod;         
     }
     if (!endit) {
         std::cout<<"Covergence was not reached !!"<<std::endl;
@@ -696,110 +713,25 @@ void do_calculation(double energy,const sph_potential& scat_pot, const radial_me
     shift=atan(tandl);
     double snsh = sin(shift);
     xsec=pi4*(2*l+1)*snsh*snsh/energy;
-}
 
-///////////////////////////////////////////////////
-// this propagates the solution out until
-//  we reach convergence or we run out of points.
-// We use trapeziodal integration here so keep
-//  the step sizes small.
-// This version stores the physical solution
-///////////////////////////////////////////////////
-void do_calculation(double energy,const sph_potential& scat_pot,const radial_mesh& mesh,
-                    double& shift,double& xsec,
-                    double* uk,double* rk,const double& tolerance,int& unpts,int l) {
-    double rstop,atal,sphj,sphn;
-    const double pi4 = 12.566370614359172; // 4*pi
-    energy/=RYDBERG;
-    double k=sqrt(energy);
-    bool endit=false;
-    size_t kk = 0;
-    size_t ncheck=0;
-    double sum1 = 0.0;
-    double sum2 = 0.0;
-    double lfact=l*(l+1);
-    double rs = mesh.rstart(0);
-    sphbess(sphj,sphn,k*rs,l);
-    double u = sphj * k;
-    uk[kk] = u;
-    rk[kk] = rs;
-    ++kk;
-    double v = scat_pot(rs);
-    double dr = mesh.deltar(0);
-    double prod = u * v * rs * dr  * 0.5;
-    double trap1 = prod * sphj * k;
-    double trap2 = prod * sphn;
-    size_t nreg = mesh.num_regions();
-    for (int ir=0; ir<nreg; ir++) {
-        rs=mesh.rstart(ir);
-        dr=mesh.deltar(ir);
-        size_t ns=mesh.nsteps(ir);
-        prod = rs * u * v * dr * 0.5;
-        trap1 = prod * sphj * k;
-        trap2 = prod * sphn;
-        for (int is=1; is<=ns; is++) {
-            double r = rs + is * dr;
-            sphbess(sphj,sphn,k*r,l);
-            u=k*r*sphj*(1.0-sum2)+r*sphn*sum1;
-            uk[kk] = u;
-            rk[kk] = r;
-            ++kk;
-            sum1 += trap1;
-            sum2 += trap2;
-            v=scat_pot(r);
-            prod=r*u*v*dr*0.5;
-            trap1=k*prod*sphj;
-            trap2=sphn*prod;
-            sum1 += trap1;
-            sum2 += trap2;
-/// test to see if we are in the asymptotic region //
-            double tst=fabs(energy-lfact/r/r);
-            if (tst<=eps || fabs(v)>tst || (fabs(tst-v)/tst)<0.999998 ) {
-                continue;
-            }
-            ++ncheck;
-            double afact=1.0-sum2;
-            if (fabs(afact)<=eps) continue;
-            double atalp1=atan(-sum1/afact/k);
-            if (ncheck==1) atal=atalp1;
-            if (ncheck<=19 || fabs(atalp1)<=eps ) continue;
-            if (fabs((atalp1-atal)/atalp1)<tolerance) {
-                endit=true;
-                rstop=r;
-                break;
-            }
-            ncheck=0;
-        }
-        if (endit) break;
-    }
-    if (!endit) {
-        std::cout<<"Covergence was not reached !!"<<std::endl;
-    }
-    fprintf(stdout,"L= %3u Energy = %15.10lf eV\n",l,energy*RYDBERG);
-    fprintf(stdout," Rstop = %15.7le\n",rstop);
-    fprintf(stdout,"sphj= %12.5le sphn=%12.5le uhomo= %12.5le v=%12.5le\n",
-            sphj,sphn,u,v);
-    fprintf(stdout,"t1= %12.5le t2= %12.5le sum1= %12.5le sum2= %12.5le\n",
-            trap1,trap2,sum1,sum2);
-    double factor=1.0-sum2;
-    double tandl=-sum1/factor/k;
-    shift=atan(tandl);
-    double snsh = sin(shift);
-    xsec=pi4*(2*l+1)*snsh*snsh/energy;
-    unpts = kk;
-    double ufact = cos(shift)/factor;
-    for (size_t m=0; m<kk; ++m) uk[m] *= ufact;
-}
+    if ( ie == -1) return;
 
-
-inline void write_u(double* u,double* r,int np,int ie,int l) {
-    char nums[32];
-    sprintf(nums,"uhomo.%03d.%03d.dat",ie,l);
-    FILE * out = fopen(nums,"w");
-    for (int i=0; i< np; i++) {
-        fprintf(out,"%15.10lf %20.10le\n",r[i],u[i]);
+    double ufact = cos(factor)/factor;
+    for (double& ur:up) ur *= ufact;
+    std::string title("uhomo.");
+    title += std::to_string(ie);
+    title += ".";
+    title += std::to_string(l);
+    title += ".out";
+    std::ofstream out(title.c_str());
+    for (size_t m=0;m<up.size();++m)
+    {
+        out << rp[m];
+        out << " ";
+        out << up[m];
+        out << "\n"; 
     }
-    fclose(out);
+    out.close();
 }
 
 /////////////////////////////////////
@@ -809,7 +741,7 @@ inline void write_u(double* u,double* r,int np,int ie,int l) {
 // let q=2*k*sin(theta/2)
 // and rm=r where v(r) approximately equal alpha/r^4
 // for us rm=rmax
-//  fb(k,theta)= -1/q* integral(r=0:rmax) of sin(q*r)*r*V(r) dr +
+//  fb(k,theta)= -2/q* integral(r=0:rmax) of sin(q*r)*r*V(r) dr +
 //     alpha*0.5*(sin(q*rm)/rm/q/rm+cos(q*rm)/rm+q*si(rm))
 // where si(x)= Si(x)- 0.5*pi =-integral(rm:infinity dt sin(t)/t)
 // when theta->0
@@ -818,56 +750,38 @@ inline void write_u(double* u,double* r,int np,int ie,int l) {
 ///////////////////////////////////////////////////////////////////////
 double bornf(const double& energy,const double& theta,
              const sph_potential& scat_pot,int nrad=500) {
-    double rest,qint,end,wt,sum2,sum4,q,qrm,cqrm,sqrm;
-
     const double kappa=sqrt(energy/RYDBERG);
     const double alpha = scat_pot.alpha();
     const double rmax = scat_pot.rmax();
-    double rstep=rmax/nrad;
-    double trstep=2*rstep;
-    wt=-rstep/3.0;
+    const double rstep=rmax/(nrad-1);
     double sum=0.0;
     double r=rstep;
+    const size_t nend = nrad - 1;
     if (fabs(theta)<DBL_EPSILON) {
-        for (size_t i=2; i<=nrad; i+=2) {
+        for (size_t i=1; i<nend; ++i) {
+            r = rstep * i;
             sum+=r*r*scat_pot(r);
-            r+=trstep;
         }
-        sum4=4.0*sum;
-        sum=0.0;
-        r=trstep;
-        for (size_t i=3; i<nrad; i+=2) {
-            sum+=r*r*scat_pot(r);
-            r+=trstep;
-        }
-        sum2=2.0*sum;
-        end=-alpha/rmax/rmax;
-        return (wt*(sum2+sum4+end)+alpha/rmax);
+        double end= -0.5 * alpha/ rmax / rmax;
+        return rstep*(sum+end)+alpha/rmax;
     }
-    q=2.0*kappa*sin(theta*0.5);
-    for (size_t i=2; i<=nrad; i+=2) {
+    double q=2.0*kappa*sin(theta*0.5);
+    for (size_t i=1;i<nend;++i)
+    {
+        r = rstep * i; 
         sum+=sin(q*r)*r*scat_pot(r);
-        r+=trstep;
     }
-    sum4=4.0*sum;
-    sum=0.0;
-    r=trstep;
-    for (size_t i=3; i<nrad; i+=2) {
-        sum+=sin(q*r)*r*scat_pot(r);
-        r+=trstep;
-    }
-    sum2=2.0*sum;
-    qrm=q*rmax;
-    sqrm = sin(qrm);
-    cqrm = cos(qrm);
-    end=-sqrm*alpha/(rmax*rmax*rmax);
-    qint=wt*(sum2+sum4+end)/q;
-    rest=alpha*0.5*(sqrm/rmax/qrm+cqrm/rmax+q*si(qrm));
+    double qrm=q*rmax;
+    double sqrm = sin(qrm);
+    double cqrm = cos(qrm);
+    double end=-sqrm*alpha*0.5/(rmax*rmax);
+    double qint=rstep*(sum+end)/q;
+    double rest=alpha*0.5*(sqrm/rmax/qrm+cqrm/rmax+q*si(qrm));
     return (qint+rest);
 }
 
 void psborn(const double& energy,const sph_potential& scat_pot,
-            double* fbps,double* fbf,int lmax,int nrad=500) {
+            double* fborn_pshift,double* fborn_amp,int lmax,int nrad=500) {
     double qsum2,qsum4,end;
     const double kappa=sqrt(energy/RYDBERG);
     const double alpha = scat_pot.alpha();
@@ -886,66 +800,52 @@ void psborn(const double& energy,const sph_potential& scat_pot,
 //////////////////////
     double skr=sin(krm);
     end=-skr*skr*alpha/rmax/rmax/rmax/rmax;
-    for (size_t i=2; i<=nrad; i+=2) {
+    qsum = 0.;
+    for (size_t i=1; i<nrad; ++i) {
+        r = i * rstep;
         skr=sin(kappa*r);
         qsum+=skr*skr*scat_pot(r);
-        r+=trstep;
     }
-    qsum4=4.0*qsum;
-    qsum=0.0;
-    r=trstep;
-    for (size_t i=3; i<nrad; i+=2) {
-        skr=sin(kappa*r);
-        qsum+=skr*skr*scat_pot(r);
-        r+=trstep;
-    }
-    qsum2=2.0*qsum;
-    double qint=wt*(end+qsum2+qsum4)/k2;
+    double qint=rstep*(end+qsum)/k2;
     double qint2=1+(2.0*krm*krm-1.0)*cos(tkrm);
     qint2+=krm*sin(tkrm);
     qint2+=4.0*krm*krm*krm*si(tkrm);
-    double fact=12.0*k2*rmax*rmax*rmax;
+    double fact=6.0*k2*rmax*rmax*rmax;
     qint2*=-alpha/fact;
     qint+=qint2;
-    fbps[0]=atan(-kappa*qint);
-    fbf[0]=-qint;
+    fborn_pshift[0]=atan(-kappa*qint);
+    fborn_amp[0]=-qint;
 /////////////////////
 // loop over l terms l!=0
 /////////////////////
+    std::vector<double> vres(nrad);
+    for (size_t i=1;i<nrad;++i) {
+        double r = rstep * i;
+        double r2 = r * r;
+        vres[i] = r2 * ( scat_pot(r) + alpha/r2/r2 );
+    }
     double sj,sn;
     for (size_t l=1; l<=lmax; l++) {
-        qsum=0.0;
-        r=rstep;
-        end=0.0;
+        qsum  = 0.0;
+        for (size_t i=1;i<nrad;++i)
+        {
+            r = rstep * i;
+            sphbess(sj,sn,kappa*r,l);
+            qsum += vres[i] * sj * sj;
+        }
+        end = 0.;
         if (l==1) end=(alpha*k2)/9.0;
-        for (size_t i=2; i<=nrad; i+=2) {
-            sphbess(sj,sn,kappa*r,l);
-            double r2=r*r;
-            double r4=r2*r2;
-            qsum+=r2*(scat_pot(r)+alpha/r4)*sj*sj;
-            r+=trstep;
-        }
-        qsum4=4.0*qsum;
-        qsum=0.0;
-        r=trstep;
-        for (size_t i=3; i<nrad; i+=2) {
-            sphbess(sj,sn,kappa*r,l);
-            double r2=r*r;
-            double r4=r2*r2;
-            qsum+=r2*(scat_pot(r)+alpha/r4)*sj*sj;
-            r+=trstep;
-        }
-        qsum2=2.0*qsum;
-        qint=wt*(end+qsum2+qsum4);
+        qint=rstep*(end+qsum);
         fact=(2*l-1)*(2*l+1)*(2*l+3);
         qint2=-pika/fact;
         qint+=qint2;
-        fbps[l]=atan(-kappa*qint);
-        fbf[l]=(-(2.0*l+1.0)*qint);
+        fborn_pshift[l]=atan(-kappa*qint);
+        fborn_amp[l]=(-(2.0*l+1.0)*qint);
     }
 }
 
-void born_proj(const double& energy,const sph_potential& scat_pot,double* fbl,
+void born_proj(const double& energy,const sph_potential& scat_pot,
+double* fbl,
 int lmax) {
     const size_t ntheta = 500;
     double pl[3];
@@ -1000,31 +900,35 @@ int lmax) {
     delete [] lsum4;
 }
 
-void dxsec(double energy,const sph_potential& sfit,const double *pshift,
-           std::ofstream& sout,int ie,int lmax,int nrad=500)
+void dxsec(double energy,const sph_potential& sfit,
+           const std::vector<double>& pshift,
+           std::ofstream& sout,int ie,int lmax,
+           double& born_xsec,
+           int nrad=500)
 {
-    char suffix_s[32];
-    sprintf(suffix_s,".%0d.out",ie);
-    std::string suffix(suffix_s);
-    sprintf(suffix_s,".%0d.dat",ie);
-    std::string suffix2(suffix_s);
-////// open dxsec file
-    std::string title="dxsec" + suffix2;
+    std::string suffix_s = ".";
+    suffix_s += std::to_string(ie);
+    suffix_s += ".out";
+    std::string title = "dxsec";
+    title += suffix_s;
     std::ofstream out(title.c_str());
-    title="dxsec_bc" + suffix2;
+    title = "dxsec_bclosed";
+    title += suffix_s;
     std::ofstream bcout(title.c_str());
-    title="bpshft" + suffix;
+    title = "born_pshift";
+    title += suffix_s;
     std::ofstream pout(title.c_str());
+
 //// here's the good stuff
     double k=sqrt(energy/RYDBERG);
     double kinv=1.0/k;
-    double *r_amp=new double[lmax+1];
-    double *i_amp=new double[lmax+1];
-    double *b_amp_proj=new double[lmax+1];
-    double *b_pshift=new double[lmax+1];
-    double *b_amp=new double[lmax+1];
-    born_proj(energy,sfit,b_amp_proj,lmax);
-    psborn(energy,sfit,b_pshift,b_amp,lmax);
+    std::vector<double> r_amp(lmax+1);
+    std::vector<double> i_amp(lmax+1);
+    std::vector<double> b_amp_proj(lmax+1);
+    std::vector<double> b_pshift(lmax+1);
+    std::vector<double> b_amp(lmax+1);
+    born_proj(energy,sfit,b_amp_proj.data(),lmax);
+    psborn(energy,sfit,b_pshift.data(),b_amp.data(),lmax);
     for (size_t l=0; l<=lmax; l++) {
         double cs,ss;
         ss = sin(pshift[l]);
@@ -1050,7 +954,7 @@ void dxsec(double energy,const sph_potential& sfit,const double *pshift,
     sout << "     (proj amps)   )      \n";
     for (size_t i=0; i<nstep; i++) {
         double cthet=cos(theta);
-        double fbk=bornf(energy,theta,sfit);
+        double fbk=bornf(energy,theta,sfit,1000);
         pl[0]=1.0;
         pl[1]=cthet;
         rsum=r_amp[0]+r_amp[1]*pl[1];
@@ -1151,7 +1055,7 @@ void dxsec(double energy,const sph_potential& sfit,const double *pshift,
     sout<<"Integrated Cross Section from First Born DCS amps = "<<std::endl;
     sout<<"           ";
     sout << std::setw(24) << std::setprecision(15) << std::scientific << aixsec2 << "\n";
-
+    born_xsec = aixsec2;
     isum=0.0;
     pl[0]=1.0;
     pl[1]=1.0;
@@ -1168,17 +1072,11 @@ void dxsec(double energy,const sph_potential& sfit,const double *pshift,
     sout<<"           ";
     sout << std::setw(24) << std::setprecision(15) << std::scientific << isum << "\n";
 //////// free allocated arrays //////////////////
-    delete [] b_amp;
-    delete [] b_pshift;
-    delete [] b_amp_proj;
-    delete [] i_amp;
-    delete [] r_amp;
 }
 
 int main() {
     int npts,prtopt;
     int nnrg;
-    double *u,*r;
     int lmax = 10;
 // open the file scatin.dat and read the parameters for this run
     std::ifstream in("scatin.dat");
@@ -1199,13 +1097,34 @@ int main() {
     double tolerance;
     in >> tolerance;
     radial_mesh rmesh;
+    int eopt = 0;
     in >> rmesh;
+//    in >> eopt;
     in >> nnrg;
-    double *enrg=new double[nnrg];
+    std::vector<double> enrg(nnrg);
     for (int i=0; i<nnrg; i++) {
         in >> enrg[i];
     }
     in.close();
+    std::vector<double> enrg_ev(nnrg);
+    switch (eopt)
+    {
+    case 0:
+        // energies are in eV
+        for (const double& e : enrg) enrg_ev.push_back((e/RYDBERG));
+        break;
+    case 1:
+        // energies are in Rydbergs
+        for (const double& e : enrg) enrg_ev.push_back((e*RYDBERG));
+        break;
+    default:
+        // energies are in wavenumbers
+        for (double& e : enrg) {
+            e = e * e;
+            enrg_ev.push_back((e*RYDBERG));
+        }
+        break;    
+    }
 // read potential in and spline fit it
     sph_potential spot;
     std::ifstream vin("vsp.dat");
@@ -1215,6 +1134,28 @@ int main() {
     }
     vin >> spot;
     vin.close();
+    std::ofstream vfit("vfit.out");
+    // write out the fit potential
+    {
+        vfit << std::setw(20) << std::setprecision(8);
+        int nr = rmesh.num_regions();
+        for (int k=0;k<nr;++k)
+        {
+            double rs = rmesh.rstart(k);
+            double rstep = rmesh.deltar(k);
+            int ns = rmesh.nsteps(k);
+            for (int kstep=0;kstep<ns;++kstep)
+            {
+                double r = rs + kstep * rstep;
+                double v = spot(r);
+                vfit << std::setw(16) << std::setprecision(10) << std::fixed;
+                vfit << r << " ";
+                vfit << std::setw(20) << std::setprecision(10) << std::scientific;                
+                vfit << v << "\n";
+            }
+        }
+    }
+    vfit.close();
 ////////////////////////////////////////
 // write input parameters to file
     std::ofstream out("scat.out");
@@ -1238,41 +1179,29 @@ int main() {
     out<<"\n";
 ///////////////////////////////////
 // now we do the calculations
-    double *pshift=new double[lmax+1];
-    double *xsec=new double[lmax+1];
+    std::vector<double> pshift(lmax+1);
+    std::vector<double> xsec(lmax+1);
     std::ofstream pout("pshift.out");
+    std::ofstream pout2("tpshift.out");
     std::ofstream xout("xsec.out");
-    if (prtopt) {
-        size_t tnpts=rmesh.num_points();
-        u=new double[tnpts];
-        r=new double[tnpts];
-    }    
+    std::ofstream xout2("xsec_ang2.out");
+    std::ofstream xout3("xsec_pi_ang2.out");
+    std::ofstream xout4("xsec_born.out");
+    
     for (int ie=0; ie<nnrg; ie++) {
         double e=enrg[ie];
         double txsec=0.0;
         double tpshift=0.0;
-        if (!prtopt) {
-            for (int l=0; l<=lmax; l++) {
+        int pflag = (prtopt) ? ie:-1;
+        for (int l=0; l<=lmax; l++) {
                 double psh,xs;
-                do_calculation(e,spot,rmesh,psh,xs,tolerance,l);
+                do_calculation(e,spot,rmesh,psh,xs,tolerance,l,pflag);
                 pshift[l] = psh;
                 tpshift += psh;
                 xsec[l] = xs;
                 txsec += xs;
-            }
-        } else {
-            for (int l=0; l<=lmax; l++) {
-                double xs,psh;
-                int np;
-                do_calculation(e,spot,rmesh,psh,xs,u,r,tolerance,np,l);
-                write_u(u,r,np,ie,l);
-                pshift[l] = psh;
-                tpshift += psh;
-                xsec[l] = xs;
-                txsec += xs;
-            }
         }
-// write output to scat.out
+        // write output to scat.out
         out<<"Energy = ";
         out<< std::setw(15) << std::setprecision(10) << std::fixed << (e/RYDBERG) << " Rydbergs\n";
         out<< std::setw(15) << std::setprecision(10) << std::fixed << (e) << " eV\n";
@@ -1294,22 +1223,30 @@ int main() {
         }
 // write output to xsec.out
         xout<< std::setw(20) << std::setprecision(10) << std::fixed << (e) << " ";
-        xout<< std::setw(20) << std::setprecision(10) << std::scientific << (txsec) << "\n\n";
+        xout<< std::setw(20) << std::setprecision(10) << std::scientific << (txsec) << "\n";
+        pout2<< std::setw(20) << std::setprecision(10) << std::fixed << (e) << " ";
+        pout2<< std::setw(20) << std::setprecision(10) << std::scientific << (tpshift) << "\n";
+        double tmp = txsec * BOHR * BOHR;
+        xout2<< std::setw(20) << std::setprecision(10) << std::fixed << (e) << " ";
+        xout2<< std::setw(20) << std::setprecision(10) << std::scientific << (tmp) << "\n";
+        tmp /= M_PI;
+        xout3<< std::setw(20) << std::setprecision(10) << std::fixed << (e) << " ";
+        xout3<< std::setw(20) << std::setprecision(10) << std::scientific << (tmp) << "\n";
 // write out diff xsections
-        dxsec(e,spot,pshift,out,ie,lmax);
+        double born_xsec;
+        dxsec(e,spot,pshift,out,ie,lmax,born_xsec);
         out<<"Integrated Cross Section from Integration = "<<std::endl;
         out<<"           ";
         out << std::setw(24) << std::setprecision(15) << std::scientific << txsec << "\n\n";
+        xout4<< std::setw(20) << std::setprecision(10) << std::fixed << (e) << " ";
+        xout4<< std::setw(20) << std::setprecision(10) << std::scientific << (born_xsec) << "\n";
     }
-    if (prtopt) {
-        delete [] r;
-        delete [] u;
-    }
-    delete [] xsec;
-    delete [] pshift;
-    delete [] enrg;
     out.close();
+    pout2.close();
     pout.close();
+    xout4.close();
+    xout3.close();
+    xout2.close();
     xout.close();
 }
 
