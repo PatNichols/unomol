@@ -336,8 +336,7 @@ class RestrictedHartreeFock {
         double ex = SymmPack::TraceSymmPackProduct(Pmat,hdpm,no)*2.0;
         std::cerr << "positron electron attraction = " << ex << "\n";
         for (size_t k=0;k<no2;++k) Hmat[k] += hdpm[k];
-#ifdef PAT_DBUG[A
-
+#ifdef PAT_DBUG
         OintsOutput();
         std::cerr << "form xmatrix\n";
 #endif

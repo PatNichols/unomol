@@ -6,7 +6,7 @@ namespace unomol {
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
 
-//#define UNOMOL_MD_INTS
+#define UNOMOL_MD_INTS
 
 #ifdef UNOMOL_MD_INTS
 
@@ -102,26 +102,22 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
                         int n34 = n3 + n4;
 
                         double sum = 0;
-
-                        for (int ix12=0; ix12<=l12; ++ix12) {
-                            for (int iy12=0; iy12<=m12; ++iy12) {
-                                for (int iz12=0; iz12<=n12; ++iz12) {
-                                    double v12 =  dx12.getValue(l1,l2,ix12) *
-                                                  dx12.getValue(m1,m2,iy12) *
-                                                  dx12.getValue(n1,n2,iz12);
-                                    for (int ix34=0; ix34<=l34; ++ix34) {
-                                        for (int iy34=0; iy34<=m34; ++iy34) {
-                                            const double v34 = v12 * dx34.getValue(l3,l4,ix34) *
-                                                               dx34.getValue(m3,m4,iy34);
-                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz12;
-                                            const double *dzp = dx34.getRow(n3,n4);
-                                            int sx = ((ix34+iy34)%2) ? -1:1;
-                                            for (int iz34=0; iz34<=n34; ++iz34) {
-                                                sum += sx * v34 *
-                                                       dzp[iz34] *
-                                                       rzp[iz34];
-                                                sx = -sx;
-                                            }
+                        for (int ix34=0; ix34<=l34; ++ix34) {
+                            for (int iy34=0; iy34<=m34; ++iy34) {
+                                for (int iz34=0; iz34<=n34; ++iz34) {
+                                    int sx = ((ix34+iy34+iz34) % 2 ) ? -1:1; 
+                                    double v34 =  dx34.getValue(l3,l4,ix34) *
+                                                  dx34.getValue(m3,m4,iy34) *
+                                                  dx34.getValue(n3,n4,iz34) * sx;
+                                    for (int ix12=0; ix12<=l12; ++ix12) {
+                                        for (int iy12=0; iy12<=m12; ++iy12) {
+                                            const double v12 = v34 * dx12.getValue(l1,l2,ix12) *
+                                                               dx12.getValue(m1,m2,iy12);
+                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz34;
+                                            const double *dzp = dx12.getRow(n1,n2);
+                                            double zsum = 0.0;
+                                            for (int iz12=0; iz12<=n12; ++iz12) zsum += dzp[iz12] * rzp[iz12];
+                                            sum += zsum * v12;
                                         }
                                     }
                                 }
@@ -238,26 +234,22 @@ void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
                         int n34 = n3 + n4;
 
                         double sum = 0;
-
-                        for (int ix12=0; ix12<=l12; ++ix12) {
-                            for (int iy12=0; iy12<=m12; ++iy12) {
-                                for (int iz12=0; iz12<=n12; ++iz12) {
-                                    double v12 =  dx12.getValue(l1,l2,ix12) *
-                                                  dx12.getValue(m1,m2,iy12) *
-                                                  dx12.getValue(n1,n2,iz12);
-                                    for (int ix34=0; ix34<=l34; ++ix34) {
-                                        for (int iy34=0; iy34<=m34; ++iy34) {
-                                            const double v34 = v12 * dx34.getValue(l3,l4,ix34) *
-                                                               dx34.getValue(m3,m4,iy34);
-                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz12;
-                                            const double *dzp = dx34.getRow(n3,n4);
-                                            int sx = ((ix34+iy34)%2) ? -1:1;
-                                            for (int iz34=0; iz34<=n34; ++iz34) {
-                                                sum += sx * v34 *
-                                                       dzp[iz34] *
-                                                       rzp[iz34];
-                                                sx = -sx;
-                                            }
+                        for (int ix34=0; ix34<=l34; ++ix34) {
+                            for (int iy34=0; iy34<=m34; ++iy34) {
+                                for (int iz34=0; iz34<=n34; ++iz34) {
+                                    int sx = ((ix34+iy34+iz34) % 2 ) ? -1:1; 
+                                    double v34 =  dx34.getValue(l3,l4,ix34) *
+                                                  dx34.getValue(m3,m4,iy34) *
+                                                  dx34.getValue(n3,n4,iz34) * sx;
+                                    for (int ix12=0; ix12<=l12; ++ix12) {
+                                        for (int iy12=0; iy12<=m12; ++iy12) {
+                                            const double v12 = v34 * dx12.getValue(l1,l2,ix12) *
+                                                               dx12.getValue(m1,m2,iy12);
+                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz34;
+                                            const double *dzp = dx12.getRow(n1,n2);
+                                            double zsum = 0.0;
+                                            for (int iz12=0; iz12<=n12; ++iz12) zsum += dzp[iz12] * rzp[iz12];
+                                            sum += zsum * v12;
                                         }
                                     }
                                 }
@@ -389,26 +381,22 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                         int n34 = n3 + n4;
 
                         double sum = 0;
-
-                        for (int ix12=0; ix12<=l12; ++ix12) {
-                            for (int iy12=0; iy12<=m12; ++iy12) {
-                                for (int iz12=0; iz12<=n12; ++iz12) {
-                                    double v12 =  dx12.getValue(l1,l2,ix12) *
-                                                  dy12.getValue(m1,m2,iy12) *
-                                                  dz12.getValue(n1,n2,iz12);
-                                    for (int ix34=0; ix34<=l34; ++ix34) {
-                                        for (int iy34=0; iy34<=m34; ++iy34) {
-                                            const double v34 = v12 * dx34.getValue(l3,l4,ix34) *
-                                                               dy34.getValue(m3,m4,iy34);
-                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz12;
-                                            const double *dzp = dz34.getRow(n3,n4);
-                                            int sx = ((ix34+iy34)%2) ? -1:1;
-                                            for (int iz34=0; iz34<=n34; ++iz34) {
-                                                sum += sx * v34 *
-                                                       dzp[iz34] *
-                                                       rzp[iz34];
-                                                sx = -sx;
-                                            }
+                        for (int ix34=0; ix34<=l34; ++ix34) {
+                            for (int iy34=0; iy34<=m34; ++iy34) {
+                                for (int iz34=0; iz34<=n34; ++iz34) {
+                                    int sx = ((ix34+iy34+iz34) % 2 ) ? -1:1; 
+                                    double v34 =  dx34.getValue(l3,l4,ix34) *
+                                                  dy34.getValue(m3,m4,iy34) *
+                                                  dz34.getValue(n3,n4,iz34) * sx;
+                                    for (int ix12=0; ix12<=l12; ++ix12) {
+                                        for (int iy12=0; iy12<=m12; ++iy12) {
+                                            const double v12 = v34 * dx12.getValue(l1,l2,ix12) *
+                                                               dy12.getValue(m1,m2,iy12);
+                                            const double *rzp = rfun.getRow((ix12+ix34),(iy12+iy34)) + iz34;
+                                            const double *dzp = dz12.getRow(n1,n2);
+                                            double zsum = 0.0;
+                                            for (int iz12=0; iz12<=n12; ++iz12) zsum += dzp[iz12] * rzp[iz12];
+                                            sum += zsum * v12;
                                         }
                                     }
                                 }
@@ -537,8 +525,10 @@ TwoElectronInts::calculate(const Basis& basis) {
     }
 #ifdef UNOMOL_MD_INTS
     MDInts mds(maxl);
+    std::cout << "MD integral scheme\n";
 #else
     Rys rys(maxl);
+    std::cout << "Rys integral scheme\n";
 #endif
     ShellQuartet sq(maxl);
     TwoInts* sints=new TwoInts[ml4];
@@ -632,7 +622,7 @@ TwoElectronInts::calculate(const Basis& basis) {
                         for (int jls=0; jls<nls2;++jls) {
                             int jr = jr0 + jls;
                             if ( jr > ir ) break;
-                            for (int kls=0; kls<nls3;++kls) {
+                             for (int kls=0; kls<nls3;++kls) {
                                 int kr = kr0 + kls;
                                 if ( kr > ir) break;
                                 for (int lls=0; lls<nls4;++lls) {
@@ -698,23 +688,86 @@ TwoElectronInts::calculate(const Basis& basis) {
     delete [] sints;
 }
 
-void
-TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
-    constexpr const int BINSIZE=8196;
-    TwoInts sints[BINSIZE];
+inline void formGMatrixKernelU(const TwoInts* sint, 
+    const double *PmatA, const double *PmatB, double *GmatA, double *GmatB)
+{
+            double val=(sint)->val;
+            int i=(sint)->i;
+            int j=(sint)->j;
+            int k=(sint)->k;
+            int l=(sint)->l;
+            int ii=i*(i+1)/2;
+            int ij=ii+j;
+            int ik=ii+k;
+            int il=ii+l;
+            int jk,jl;
+            int kk = ( k * ( k + 1 ) ) / 2;
+            int kl = kk + l;
+            if (j >= k) {
+                int jj = (j * ( j + 1 ) ) / 2;
+                jk = jj + k;
+                jl = jj + l;
+            } else {
+                jk = kk + j;
+                if (j>l) {
+                    jl=j*(j+1)/2+l;
+                } else {
+                    jl=l*(l+1)/2+j;
+                }
+            }
+            double da=val*(PmatA[ij]+PmatB[ij]);
+            double db=val*(PmatA[kl]+PmatB[kl]);
+            double sjlA=val*PmatA[ik];
+            double sjkA=val*PmatA[il];
+            double sikA=val*PmatA[jl];
+            double silA=val*PmatA[jk];
+            double sjlB=val*PmatB[ik];
+            double sjkB=val*PmatB[il];
+            double sikB=val*PmatB[jl];
+            double silB=val*PmatB[jk];
+            if (k!=l) {
+                db=db+db;
+                GmatA[ik]-=sikA;
+                GmatB[ik]-=sikB;
+                if (i!=j && j>=k) {
+                    GmatA[jk]-=sjkA;
+                    GmatB[jk]-=sjkB;
+                }
+            }
+            GmatA[il]-=silA;
+            GmatA[ij]+=db;
+            GmatB[il]-=silB;
+            GmatB[ij]+=db;
+            if (i!=j && j>=l) {
+                GmatA[jl]-=sjlA;
+                GmatB[jl]-=sjlB;
+            }
+            if (ij!=kl) {
+                if (i!=j) da=da+da;
+                if (j<=k) {
+                    GmatA[jk]-=sjkA;
+                    GmatB[jk]-=sjkB;
+                    if (i!=j && i<=k) {
+                        GmatA[ik]-=sikA;
+                        GmatB[ik]-=sikB;
+                    }
+                    if (k!=l && j<=l) {
+                        GmatA[jl]-=sjlA;
+                        GmatB[jl]-=sjlB;
+                    }
+                }
+                GmatA[kl]+=da;
+                GmatB[kl]+=da;
+            }
+}
 
-    cache.open_for_reading();
-    size_t nints = cache.total_size()/sizeof(TwoInts);
-    size_t nbin = nints/BINSIZE;
-    size_t nextra = nints%BINSIZE;
-    for (int ibin=0; ibin<nbin; ++ibin) {
-        cache.read(sints,BINSIZE);
-        for (int ix=0; ix<BINSIZE; ++ix) {
-            double val=(sints+ix)->val;
-            int i=(sints+ix)->i;
-            int j=(sints+ix)->j;
-            int k=(sints+ix)->k;
-            int l=(sints+ix)->l;
+inline void formGMatrixKernel(const TwoInts* sint, const double *Pmat, double *Gmat)
+{
+            double val=(sint)->val;
+            int i=(sint)->i;
+            int j=(sint)->j;
+            int k=(sint)->k;
+            int l=(sint)->l;
             int ii=i*(i+1)/2;
             int ij=ii+j;
             int ik=ii+k;
@@ -757,66 +810,10 @@ TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
                 }
                 Gmat[kl]+=da;
             }
-        }
-    }
-    if (nextra) {
-        cache.read(sints,nextra);
-        for (int ix=0; ix<nextra; ++ix) {
-            double val=(sints+ix)->val;
-            int i=(sints+ix)->i;
-            int j=(sints+ix)->j;
-            int k=(sints+ix)->k;
-            int l=(sints+ix)->l;
-            int ii=i*(i+1)/2;
-            int ij=ii+j;
-            int ik=ii+k;
-            int il=ii+l;
-            int jk,jl;
-            int kk = ( k * ( k + 1 ) ) / 2;
-            int kl = kk + l;
-            if (j >= k) {
-                int jj = (j * ( j + 1 ) ) / 2;
-                jk = jj + k;
-                jl = jj + l;
-            } else {
-                jk = kk + j;
-                if (j>l) {
-                    jl=j*(j+1)/2+l;
-                } else {
-                    jl=l*(l+1)/2+j;
-                }
-            }
-            double da=val*2.0*Pmat[ij];
-            double db=val*2.0*Pmat[kl];
-            double sjl=val*Pmat[ik];
-            double sjk=val*Pmat[il];
-            double sik=val*Pmat[jl];
-            double sil=val*Pmat[jk];
-            if (k!=l) {
-                db=db+db;
-                Gmat[ik]-=sik;
-                if (i!=j && j>=k) Gmat[jk]-=sjk;
-            }
-            Gmat[il]-=sil;
-            Gmat[ij]+=db;
-            if (i!=j && j>=l) Gmat[jl]-=sjl;
-            if (ij!=kl) {
-                if (i!=j) da=da+da;
-                if (j<=k) {
-                    Gmat[jk]-=sjk;
-                    if (i==k && i!=j ) Gmat[ik]-=sik;
-                    if (k!=l && j<=l ) Gmat[jl]-=sjl;
-                }
-                Gmat[kl]+=da;
-            }
-        } 
-    }
-    cache.close();
 }
 
 void
-TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
-                             double *GmatA,double *GmatB) {
+TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
     constexpr const int BINSIZE=8196;
     TwoInts sints[BINSIZE];
 
@@ -824,145 +821,41 @@ TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
     size_t nints = cache.total_size()/sizeof(TwoInts);
     size_t nbin = nints/BINSIZE;
     size_t nextra = nints%BINSIZE;
-    for (size_t ibin=0; ibin<nbin; ++ibin) {
+    for (int ibin=0; ibin<nbin; ++ibin) {
         cache.read(sints,BINSIZE);
         for (int ix=0; ix<BINSIZE; ++ix) {
-            double val=(sints+ix)->val;
-            int i=(sints+ix)->i;
-            int j=(sints+ix)->j;
-            int k=(sints+ix)->k;
-            int l=(sints+ix)->l;
-            int ii=i*(i+1)/2;
-            int ij=ii+j;
-            int ik=ii+k;
-            int il=ii+l;
-            int jk,jl;
-            int kl=k*(k+1)/2+l;
-            if (j>k) {
-                jk=j*(j+1)/2+k;
-            } else {
-                jk=k*(k+1)/2+j;
-            }
-            if (j>l) {
-                jl=j*(j+1)/2+l;
-            } else {
-                jl=l*(l+1)/2+j;
-            }
-            double da=val*(PmatA[ij]+PmatB[ij]);
-            double db=val*(PmatA[kl]+PmatB[kl]);
-            double sjlA=val*PmatA[ik];
-            double sjkA=val*PmatA[il];
-            double sikA=val*PmatA[jl];
-            double silA=val*PmatA[jk];
-            double sjlB=val*PmatB[ik];
-            double sjkB=val*PmatB[il];
-            double sikB=val*PmatB[jl];
-            double silB=val*PmatB[jk];
-            if (k!=l) {
-                db=db+db;
-                GmatA[ik]-=sikA;
-                GmatB[ik]-=sikB;
-                if (i!=j && j>=k) {
-                    GmatA[jk]-=sjkA;
-                    GmatB[jk]-=sjkB;
-                }
-            }
-            GmatA[il]-=silA;
-            GmatA[ij]+=db;
-            GmatB[il]-=silB;
-            GmatB[ij]+=db;
-            if (i!=j && j>=l) {
-                GmatA[jl]-=sjlA;
-                GmatB[jl]-=sjlB;
-            }
-            if (ij!=kl) {
-                if (i!=j) da=da+da;
-                if (j<=k) {
-                    GmatA[jk]-=sjkA;
-                    GmatB[jk]-=sjkB;
-                    if (i!=j && i<=k) {
-                        GmatA[ik]-=sikA;
-                        GmatB[ik]-=sikB;
-                    }
-                    if (k!=l && j<=l) {
-                        GmatA[jl]-=sjlA;
-                        GmatB[jl]-=sjlB;
-                    }
-                }
-                GmatA[kl]+=da;
-                GmatB[kl]+=da;
-            }
+            formGMatrixKernel(sints+ix,Pmat,Gmat);
         }
     }
-    if (nextra!=0) {
+    if (nextra) {
         cache.read(sints,nextra);
         for (int ix=0; ix<nextra; ++ix) {
-            double val=(sints+ix)->val;
-            int i=(sints+ix)->i;
-            int j=(sints+ix)->j;
-            int k=(sints+ix)->k;
-            int l=(sints+ix)->l;
-            int ii=i*(i+1)/2;
-            int ij=ii+j;
-            int ik=ii+k;
-            int il=ii+l;
-            int jk,jl;
-            int kl=k*(k+1)/2+l;
-            if (j>k) {
-                jk=j*(j+1)/2+k;
-            } else {
-                jk=k*(k+1)/2+j;
-            }
-            if (j>l) {
-                jl=j*(j+1)/2+l;
-            } else {
-                jl=l*(l+1)/2+j;
-            }
-            double da=val*(PmatA[ij]+PmatB[ij]);
-            double db=val*(PmatA[kl]+PmatB[kl]);
-            double sjlA=val*PmatA[ik];
-            double sjkA=val*PmatA[il];
-            double sikA=val*PmatA[jl];
-            double silA=val*PmatA[jk];
-            double sjlB=val*PmatB[ik];
-            double sjkB=val*PmatB[il];
-            double sikB=val*PmatB[jl];
-            double silB=val*PmatB[jk];
-            if (k!=l) {
-                db=db+db;
-                GmatA[ik]-=sikA;
-                GmatB[ik]-=sikB;
-                if (i!=j && j>=k) {
-                    GmatA[jk]-=sjkA;
-                    GmatB[jk]-=sjkB;
-                }
-            }
-            GmatA[il]-=silA;
-            GmatA[ij]+=db;
-            GmatB[il]-=silB;
-            GmatB[ij]+=db;
-            if (i!=j && j>=l) {
-                GmatA[jl]-=sjlA;
-                GmatB[jl]-=sjlB;
-            }
-            if (ij!=kl) {
-                if (i!=j) da=da+da;
-                if (j<=k) {
-                    GmatA[jk]-=sjkA;
-                    GmatB[jk]-=sjkB;
-                    if (i!=j && i<=k) {
-                        GmatA[ik]-=sikA;
-                        GmatB[ik]-=sikB;
-                    }
-                    if (k!=l && j<=l) {
-                        GmatA[jl]-=sjlA;
-                        GmatB[jl]-=sjlB;
-                    }
-                }
-                GmatA[kl]+=da;
-                GmatB[kl]+=da;
-            }
+            formGMatrixKernel(sints+ix,Pmat,Gmat);
+        } 
+    }
+    cache.close();
+}
+
+void
+TwoElectronInts::formGmatrix(const double* PmatA, const double *PmatB, double *GmatA, double *GmatB) {
+    constexpr const int BINSIZE=8196;
+    TwoInts sints[BINSIZE];
+
+    cache.open_for_reading();
+    size_t nints = cache.total_size()/sizeof(TwoInts);
+    size_t nbin = nints/BINSIZE;
+    size_t nextra = nints%BINSIZE;
+    for (int ibin=0; ibin<nbin; ++ibin) {
+        cache.read(sints,BINSIZE);
+        for (int ix=0; ix<BINSIZE; ++ix) {
+            formGMatrixKernelU(sints+ix,PmatA,PmatB,GmatA,GmatB);
         }
+    }
+    if (nextra) {
+        cache.read(sints,nextra);
+        for (int ix=0; ix<nextra; ++ix) {
+            formGMatrixKernelU(sints+ix,PmatA,PmatB,GmatA,GmatB);
+        } 
     }
     cache.close();
 }

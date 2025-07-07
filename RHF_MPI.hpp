@@ -98,13 +98,14 @@ class RestrictedHartreeFockMPI {
         delete [] Pmat;
     }
 
-    void update() noexcept {
+    void update(const TwoElectronInts* exints) noexcept {
         int i;
         for (i=0; i<no2; ++i) Gmat[i] = 0.0;
         for (i=0; i<no2; ++i) Gbuf[i] = 0.0;
         MPI_Bcast(Pmat,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
         MPI_Barrier(MPI_COMM_WORLD);
         tints.formGmatrix(Pmat,Gbuf);
+        if ( exints ) xints->formGMatrix(Pmat,Gbuf);
         MPI_Reduce(Gbuf,Gmat,no2,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
         MPI_Barrier(MPI_COMM_WORLD);
         if (rank!=0) {
@@ -118,34 +119,6 @@ class RestrictedHartreeFockMPI {
             std::cerr << "One Electron Energy = " << e1 << "\n";
             std::cerr << "Two Electron Energy = " << e2 << "\n";
         }
-        ediff=energy-eold;
-        eold=energy;
-        for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+Gmat[i];
-        SymmPack::sp_trans(no,Fock,Xmat,Wrka);
-        SymmPack::rsp(no,Fock,Wmat,Evals,Wrka);
-        formCmatrix(Cmat);
-        if (scf_accel==1) memcpy(Pold2,Pold,sizeof(double)*no2);
-        memcpy(Pold,Pmat,sizeof(double)*no2);
-        formPmatrix(Pmat,Cmat,nocc);
-        pdiff=SymmPack::SymmPackDiffNorm(Pmat,Pold,no);
-        ++iteration;
-    }
-
-    void dpm_update(TwoElectronInts& xints) noexcept {
-        int i;
-        for (i=0; i<no2; ++i) Gbuf[i]=0.0;
-        MPI_Bcast(Pmat,no2,MPI_DOUBLE,0,MPI_COMM_WORLD);
-        MPI_Barrier(MPI_COMM_WORLD);
-        xints.formGmatrix(Pmat,Gbuf);
-        tints.formGmatrix(Pmat,Gbuf);
-        MPI_Reduce(Gbuf,Gmat,no2,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-        MPI_Barrier(MPI_COMM_WORLD);
-        if (rank!=0) {
-            ++iteration;
-            return;
-        }
-        energy=SymmPack::TraceSymmPackProduct(Pmat,Hmat,no)*2.0+
-               SymmPack::TraceSymmPackProduct(Pmat,Gmat,no);
         ediff=energy-eold;
         eold=energy;
         for (i=0; i<no2; ++i) Fock[i]=Hmat[i]+Gmat[i];
@@ -379,57 +352,62 @@ class RestrictedHartreeFockMPI {
         ////////////////////////////////////////////////////////
         // start calculation
         std::ifstream in("pos.grid.dat");
+        if (!in) {
+            std::cerr << "could not find pos.grid.dat!\n";
+            exit(-1);
+        }
         in >> npts;
-        in >> px;
-        in >> py;
-        in >> pz;
-        basis.SetCenterPosition(px,py,pz,pcen);
-        if (!rank )  nucrep=nuclear_repulsion_energy(ncen,
+            in >> px;
+            in >> py;
+            in >> pz;
+            basis.SetCenterPosition(px,py,pz,pcen);
+            if (!rank )  nucrep=nuclear_repulsion_energy(ncen,
                                 basis.center_ptr());
-        TwoElectronInts xints(basis,sshell,xstr);
-        FILE *vout;
-        FILE *sout;
-        if (!rank) {
-            OneElectronInts(basis,Smat,Tmat,Hmat);
-            GDPMInts(basis,Hmat);
-            OintsOutput();
-            formXmatrix();
-            memcpy(Pmat,PmatGs,sizeof(double)*no2);
-            vout = create_file("vpol.out");
-            sout = create_file("spol.out");
-        }
-        int im_done=0;
-        iteration=0;
-        extrap=0;
-        eold=0.0;
-        dpm_update(xints);
-        double init_energy;
-        if (rank==0) init_energy = energy+nucrep;
-        while (iteration<maxits) {
-            if (!rank)  scf_converger();
-            update();
+            TwoElectronInts xints(basis,sshell,xstr);
+            FILE *vout;
+            FILE *sout;
             if (!rank) {
-                if (is_converged()) im_done=1;
+                OneElectronInts(basis,Smat,Tmat,Hmat);
+                GDPMInts(basis,Hmat);
+                OintsOutput();
+                formXmatrix();
+                memcpy(Pmat,PmatGs,sizeof(double)*no2);
+                vout = create_file("vpol.out");
+                sout = create_file("spol.out");
             }
-            MPI_Barrier(MPI_COMM_WORLD);
-            MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
-            if (im_done) break;
-        }
-        if (!rank) {
-            double final_energy=energy+nucrep;
-            double vpol=final_energy-init_energy;
-            double vstat=init_energy-energyGs+nucrep;
-            double r2=px*px+py*py+pz*pz;
-            double alfa= -2.0*vpol*r2*r2;
-            FILE *vout = create_file("vpol.out");
-            FILE *sout = create_file("spol.out");
-            fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le\n",px,py,pz,
-                    vpol,alfa);
-            fflush(vout);
-            fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
+            int im_done=0;
+            iteration=0;
+            extrap=0;
+            eold=0.0;
+            update(&xints);
+            double init_energy;
+            if (rank==0) init_energy = energy+nucrep;
+            while (iteration<maxits) {
+                if (!rank)  scf_converger();
+                update(&xints);
+                if (!rank) {
+                    if (is_converged()) im_done=1;
+                }
+                MPI_Barrier(MPI_COMM_WORLD);
+                MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
+                if (im_done) break;
+            }
+            if (!rank) {
+                double final_energy=energy+nucrep;
+                double vpol=final_energy-init_energy;
+                double vstat=init_energy-energyGs+nucrep;
+                double r2=px*px+py*py+pz*pz;
+                double alfa= -2.0*vpol*r2*r2;
+                FILE *vout = create_file("vpol.out");
+                FILE *sout = create_file("spol.out");
+                fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le %25.15le %25.15le\n",
+                    px,py,pz,
+                    vpol,alfa,vstat,vpol);
+                fflush(vout);
+                fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
                     0,energyGs,init_energy,final_energy,vstat,ediff);
-            fflush(sout);
-        }
+                fflush(sout);
+            }
         for (int i=1; i<npts; ++i) {
             in >> px;
             in >> py;
@@ -450,14 +428,14 @@ class RestrictedHartreeFockMPI {
                 eold=0.0;
             }
             im_done=0;
-            dpm_update(xints);
+            update(&xints);
             double init_energy=energy+nucrep;
             while (iteration<maxits) {
                 MPI_Barrier(MPI_COMM_WORLD);
                 MPI_Bcast(&im_done,1,MPI_INT,0,MPI_COMM_WORLD);
                 if (im_done) break;
                 if (!rank)  scf_converger();
-                update();
+                update(&xints);
                 if (!rank) {
                     if (is_converged()) im_done=1;
                 }
@@ -468,12 +446,13 @@ class RestrictedHartreeFockMPI {
             double vstat=init_energy-energyGs;
             double r2=px*px+py*py+pz*pz;
             double alfa= -2.0*vpol*(r2*r2);
-            fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le\n",px,py,pz,
-                    vpol,alfa);
-            fflush(vout);
-            fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
-                    i,energyGs,init_energy,final_energy,vstat,ediff);
-            fflush(sout);
+                fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le %25.15le %25.15le\n",
+                    px,py,pz,
+                    vpol,alfa,vstat,vpol);
+                fflush(vout);
+                fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
+                    0,energyGs,init_energy,final_energy,vstat,ediff);
+                fflush(sout);
         }
         in.close();
         if (rank) return;
@@ -484,13 +463,13 @@ class RestrictedHartreeFockMPI {
     bool is_converged() {
         switch (cflag) {
         case 0:
-            if (ediff<eps) return true;
+            if (fabs(ediff)<eps) return true;
             return false;
         case 1:
             if (pdiff<eps) return true;
             return false;
         default:
-            if (pdiff<eps && ediff<eps) return true;
+            if (pdiff<eps && fabs(ediff)<eps) return true;
             return false;
         }
     }
