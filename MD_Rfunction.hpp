@@ -36,13 +36,18 @@ public:
     }
 
     /** returns value of tensor for indices i,j, and k */
-    constexpr double getValue(int i,int j,int k) const noexcept {
+    inline double getValue(int i,int j,int k) const noexcept {
         return r[i][j][k];
     }
 
     /** return a page of the tensor for fast access */
-    constexpr const double* getRow(int i,int j) const noexcept {
+    inline const double* getRow(int i,int j) const noexcept {
         return r[i][j];
+    }
+
+    inline double operator()(int i,int j,int k) const noexcept
+    {
+        return r[i][j][k];
     }
 
     /** find values for tensor */
@@ -95,15 +100,18 @@ public:
         x3 = x2 * x;
         y3 = y2 * y;
         z3 = z2 * z;
+        double z2p = z2 * r3 + r2;
+        double y2p = y2 * r3 + r2;
+        double x2p = x2 * r3 + r2;
         r[0][0][3] = z3 * r3 + 3.0 * z * r2;
-        r[0][1][2] = y * z2 * r3 + y * r2;
-        r[1][0][2] = x * z2 * r3 + x * r2;
-        r[0][2][1] = y2 * z * r3 + z * r2;
+        r[0][1][2] = y * z2p;
+        r[1][0][2] = x * z2p;
+        r[0][2][1] = z * y2p;
         r[1][1][1] = x * y * z * r3;
-        r[2][0][1] = x2 * z * r3 + z * r2;
+        r[2][0][1] = z * x2p;
         r[0][3][0] = y3 * r3 + 3.0 * y * r2;
-        r[1][2][0] = x * y2 * r3 + x * r2;
-        r[2][1][0] = x2 * y * r3 + y * r2;
+        r[1][2][0] = x * y2p;
+        r[2][1][0] = y * x2p;
         r[3][0][0] = x3 * r3 + 3.0 * x * r2;
         if (ltot == 3) {
             return;
@@ -2182,7 +2190,7 @@ public:
      *  this function an array with the value for the
      *   integral from 0 to 1 of  pow(u,2*m)exp(-t*u*u) du.
      */
-    constexpr void Fgamma(double fm[],double t,int m) const noexcept {
+    inline void Fgamma(double fm[],double t,int m) const noexcept {
         const double tcrit=20.0;
         const double sqrtpi=0.88622692545275801365;
         const double eps=1.e-14;
@@ -2194,7 +2202,7 @@ public:
         double mphalf=m+0.5;
         double term=0.5/mphalf;
         double sum=term;
-        for (int i=1; i<=200; i++) {
+        for (int i=1; i<=250; i++) {
             term*=(t/(mphalf+i));
             sum+=term;
             if (term<eps) break;
@@ -2205,7 +2213,7 @@ public:
         for (int i=m-1; i>=0; i--) fm[i]=(fm[i+1]*twot+expt)/(i+i+1.0);
     }
 
-    constexpr void loop_eval(const double *pq,int ltot)
+    inline void loop_eval(const double *pq,int ltot)
     {
         // slower evaluation using loops and rz
         const double x = pq[0];

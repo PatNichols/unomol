@@ -24,19 +24,19 @@ class MD_Dfunction {
         delete_tensor3<double>(dtx,asize1,asize1);
     }
 
-    constexpr const double* getRow(int i,int j) const noexcept {
+    inline const double* getRow(int i,int j) const noexcept {
         return dtx[i][j];
     }
 
-    constexpr double getValue(int i,int j,int k) const noexcept {
+    inline double getValue(int i,int j,int k) const noexcept {
         return dtx[i][j][k];
     }
 
-    constexpr const double * operator()(int i,int j) const noexcept { return dtx[i][j];}
+    inline const double * operator()(int i,int j) const noexcept { return dtx[i][j];}
 
-    constexpr double operator()(int i,int j,int k) const noexcept { return dtx[i][j][k];}
+    inline const double& operator()(int i,int j,int k) const noexcept { return dtx[i][j][k];}
 
-    constexpr void eval(double abi,double ax,double bx,int l1,int l2) noexcept {
+    inline void eval(double abi,double ax,double bx,int l1,int l2) noexcept {
         int ltot=l1+l2;
         if (ltot==0) {
             dtx[0][0][0]=1.0;
@@ -71,7 +71,7 @@ class MD_Dfunction {
         }
     }
 
-    constexpr void eval_one_cen(double abi,int l1,int l2) noexcept {
+    inline void eval_one_cen(double abi,int l1,int l2) noexcept {
         int ltot=l1+l2;
         if (ltot==0) {
             dtx[0][0][0]=1.0;

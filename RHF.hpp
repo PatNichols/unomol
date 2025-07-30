@@ -15,6 +15,7 @@
 #include "SymmPack.hpp"
 #include "FField.hpp"
 #include "Stopwatch.hpp"
+#include "AngMomInts.hpp"
 using namespace std;
 
 namespace unomol {
@@ -115,6 +116,7 @@ class RestrictedHartreeFock {
         nucrep=nuclear_repulsion_energy(ncen,basis.center_ptr());
         OneElectronInts(basis,Smat,Tmat,Hmat);
         MomentInts(basis);
+        AngMomInts(basis);
         OintsOutput();
         formXmatrix();
         if (basis.scf_flags(2)) {
@@ -173,6 +175,7 @@ class RestrictedHartreeFock {
         Fwrite(Pmat,sizeof(double),no2,fp);
         fclose(fp);
         final_output(init_energy);
+        calculateAngMomentum(Pmat,no2);
     }
 
     void formCmatrix(double* c) {
@@ -383,13 +386,13 @@ class RestrictedHartreeFock {
     constexpr bool is_converged() noexcept {
         switch (cflag) {
         case 0:
-            if (ediff<eps) return true;
+            if (fabs(ediff)<eps) return true;
             return false;
         case 1:
             if (pdiff<eps) return true;
             return false;
         default:
-            if (pdiff<eps && ediff<eps) return true;
+            if (pdiff<eps && fabs(ediff)<eps) return true;
             return false;
         }
     }
@@ -449,6 +452,7 @@ class RestrictedHartreeFock {
         fclose(out);
         AnalyzeMoments(Pmat,basis.center_ptr(),ncen,no2);
         AnalyzeMOMoments(Cmat,no2,no);
+        calculateAngMomentum(Pmat,no2);
     }
 
 
