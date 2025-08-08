@@ -6,15 +6,10 @@ namespace unomol {
 #define UNO_SHIFT 4U
 #define UNO_SHIFT2 8U
 
-//#define UNOMOL_MD_INTS
-
-#ifdef UNOMOL_MD_INTS
-
 void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
-                            const AuxFunctions& aux,
-                            MDInts& mds,
-                            TwoInts* sints) 
-{
+                                    const AuxFunctions& aux,
+                                    MDInts& mds,
+                                    TwoInts* sints) {
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
     const int lvt12=sq.lv1+sq.lv2;
@@ -136,9 +131,9 @@ void calc_two_electron_ints_one_cen(const ShellQuartet& sq,
 }
 
 void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
-                            const AuxFunctions& aux,
-                            MDInts& mds,
-                            TwoInts* sints) {
+                                    const AuxFunctions& aux,
+                                    MDInts& mds,
+                                    TwoInts* sints) {
     const double SRterm= 34.9868366552497250;
     const double threshold=1.e-12;
     const int lvt12=sq.lv1+sq.lv2;
@@ -271,10 +266,10 @@ void calc_two_electron_ints_two_cen(const ShellQuartet& sq,
     }
 }
 
-void calc_two_electron_ints(const ShellQuartet& sq,
-                            const AuxFunctions& aux,
-                            MDInts& mds,
-                            TwoInts* sints) {
+void calc_two_electron_ints_md(const ShellQuartet& sq,
+                               const AuxFunctions& aux,
+                               MDInts& mds,
+                               TwoInts* sints) {
     double p[3],q[3],pq[3];
     if ( sq.a == sq.b && sq.a == sq.c && sq.a == sq.d) return calc_two_electron_ints_one_cen(sq,aux,mds,sints);
     if ( sq.a == sq.b && sq.c == sq.d) return calc_two_electron_ints_two_cen(sq,aux,mds,sints);
@@ -335,7 +330,7 @@ void calc_two_electron_ints(const ShellQuartet& sq,
                     q[0]=(cxp*sq.c[0]+dxp*sq.d[0])*cdi;
                     q[1]=(cxp*sq.c[1]+dxp*sq.d[1])*cdi;
                     q[2]=(cxp*sq.c[2]+dxp*sq.d[2])*cdi;
-                    
+
                     cdi *= 0.5;
                     dx34.eval(cdi,(q[0]-sq.c[0]),(q[0]-sq.d[0]),sq.lv3,sq.lv4);
                     dy34.eval(cdi,(q[1]-sq.c[1]),(q[1]-sq.d[1]),sq.lv3,sq.lv4);
@@ -422,12 +417,10 @@ void calc_two_electron_ints(const ShellQuartet& sq,
     }
 }
 
-#else
-
-void calc_two_electron_ints(const ShellQuartet& sq,
-                            const AuxFunctions& aux,
-                            Rys& rys,
-                            TwoInts* sints) {
+void calc_two_electron_ints_rys(const ShellQuartet& sq,
+                                const AuxFunctions& aux,
+                                Rys& rys,
+                                TwoInts* sints) {
     double p[3],q[3];
     double ab[3],cd[3];
     double pa[3],qc[3];
@@ -515,8 +508,6 @@ void calc_two_electron_ints(const ShellQuartet& sq,
     }
 }
 
-#endif
-
 void
 TwoElectronInts::calculate(const Basis& basis) {
     const double threshold=1.e-14;
@@ -535,9 +526,8 @@ TwoElectronInts::calculate(const Basis& basis) {
         int lv1=(shell+i)->Lvalue();
         nls1=aux.number_of_lstates(lv1);
     }
-#ifdef UNOMOL_MD_INTS
     MDInts mds(maxl);
-#else
+#ifndef UNOMOL_MD_INTS
     Rys rys(maxl);
 #endif
     ShellQuartet sq(maxl);
@@ -568,6 +558,366 @@ TwoElectronInts::calculate(const Basis& basis) {
             sq.b=(center+cen2)->r_vec();
             sq.ab2=dist_sqr(sq.a,sq.b);
             int nls2=aux.number_of_lstates(sq.lv2);
+            int lv2 = sq.lv2;
+//            bool switch12 = false;
+            bool switch12=sq.lv1<sq.lv2;
+            if (switch12) {
+                it=sq.npr1;
+                sq.npr1=sq.npr2;
+                sq.npr2=it;
+                it=sq.lv1;
+                sq.lv1=sq.lv2;
+                sq.lv2=it;
+                dp=sq.al1;
+                sq.al1=sq.al2;
+                sq.al2=dp;
+                dp=sq.co1;
+                sq.co1=sq.co2;
+                sq.co2=dp;
+                dp=sq.a;
+                sq.a=sq.b;
+                sq.b=dp;
+            }
+            for (int ksh=0; ksh<=ish; ++ksh) {
+                int kr0 = basis.offset(ksh);
+                sq.npr3=(shell+ksh)->number_of_prims();
+                sq.lv3=(shell+ksh)->Lvalue();
+                int cen3=(shell+ksh)->center();
+                sq.al3=(shell+ksh)->alf_ptr();
+                sq.co3=(shell+ksh)->cof_ptr();
+                sq.c=(center+cen3)->r_vec();
+                int nls3=aux.number_of_lstates(sq.lv3);
+                int lv3 = sq.lv3;
+                for (int lsh=0; lsh<=ksh; ++lsh) {
+                    int lr0 = basis.offset(lsh);
+                    sq.npr4=(shell+lsh)->number_of_prims();
+                    sq.lv4=(shell+lsh)->Lvalue();
+                    int cen4=(shell+lsh)->center();
+                    sq.al4=(shell+lsh)->alf_ptr();
+                    sq.co4=(shell+lsh)->cof_ptr();
+                    sq.d=(center+cen4)->r_vec();
+                    sq.cd2=dist_sqr(sq.c,sq.d);
+                    int nls4=aux.number_of_lstates(sq.lv4);
+                    int lv4 = sq.lv4;
+                    int lvt = lv1 + lv2 + lv3 + lv4;
+//                    bool switch34=false;
+                    bool switch34=sq.lv3<sq.lv4;
+                    if (switch34) {
+                        it=sq.npr3;
+                        sq.npr3=sq.npr4;
+                        sq.npr4=it;
+                        it=sq.lv3;
+                        sq.lv3=sq.lv4;
+                        sq.lv4=it;
+                        dp=sq.al3;
+                        sq.al3=sq.al4;
+                        sq.al4=dp;
+                        dp=sq.co3;
+                        sq.co3=sq.co4;
+                        sq.co4=dp;
+                        dp=sq.c;
+                        sq.c=sq.d;
+                        sq.d=dp;
+                    }
+                    int knt=0;
+                    for (int ils=0; ils<nls1; ++ils) {
+                        int ir = ir0 + ils;
+                        for (int jls=0; jls<nls2; ++jls) {
+                            int jr = jr0 + jls;
+                            if ( jr > ir ) break;
+                            for (int kls=0; kls<nls3; ++kls) {
+                                int kr = kr0 + kls;
+                                if ( kr > ir) break;
+                                for (int lls=0; lls<nls4; ++lls) {
+                                    int lr = lr0 + lls;
+                                    if ( lr > kr || ( ir == kr && lr > jr) ) break;
+                                    (sints+knt)->val=0.0;
+                                    (sints+knt)->i=(unsigned int)ir;
+                                    (sints+knt)->j=(unsigned int)jr;
+                                    (sints+knt)->k=(unsigned int)kr;
+                                    (sints+knt)->l=(unsigned int)lr;
+                                    unsigned int l12 = (ils<<UNO_SHIFT) + jls;
+                                    if (switch12) l12=(jls<<UNO_SHIFT)+ils;
+                                    unsigned int l34=(kls<<UNO_SHIFT)+lls;
+                                    if (switch34) l34=(lls<<UNO_SHIFT)+kls;
+                                    sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
+                                    sq.norms[knt] =
+                                        aux.normalization_factor(lv1,ils)*
+                                        aux.normalization_factor(lv2,jls)*
+                                        aux.normalization_factor(lv3,kls)*
+                                        aux.normalization_factor(lv4,lls);
+                                    ++knt;
+                                }
+                            }
+                        }
+                    }
+                    if (!knt) continue;
+                    ncalc += knt;
+                    sq.len=knt;
+
+#ifdef UNOMOL_MD_INTS
+                    calc_two_electron_ints_md(sq,aux,mds,sints);
+#else
+                    if ( lvt <= 8) {
+                        calc_two_electron_ints_rys(sq,aux,rys,sints);
+                    } else {
+                        calc_two_electron_ints_md(sq,aux,mds,sints);
+                    }
+#endif
+                    for (int kc=0; kc<knt; ++kc) {
+                        if (fabs((sints+kc)->val)>threshold) {
+                            cache.write(sints+kc,1);
+                        }
+                    }
+                    if (switch34) {
+                        sq.npr3=sq.npr4;
+                        sq.lv3=sq.lv4;
+                        sq.al3=sq.al4;
+                        sq.co3=sq.co4;
+                        sq.c=sq.d;
+                    }
+                }
+            }
+            if (switch12) {
+                sq.npr1=sq.npr2;
+                sq.lv1=sq.lv2;
+                sq.al1=sq.al2;
+                sq.co1=sq.co2;
+                sq.a=sq.b;
+            }
+        }
+    }
+    timer.stop();
+    cache.close();
+    std::cerr << "Time for Two Electrons Integrals = " << timer.elapsed_time() << " seconds\n";
+    size_t nb = cache.total_size()/sizeof(TwoInts);
+    std::cerr << " # of write integrals = " << nb << "\n";
+    std::cerr << " # of calc  integrals = " << ncalc << "\n";
+    delete [] sints;
+}
+
+inline void formGMatrixKernel(const double *Pmat, double *Gmat, TwoInts& sint) {
+    double val=sint.val;
+    int i=sint.i;
+    int j=sint.j;
+    int k=sint.k;
+    int l=sint.l;
+    int ii=i*(i+1)/2;
+    int ij=ii+j;
+    int ik=ii+k;
+    int il=ii+l;
+    int jk,jl;
+    int kk = ( k * ( k + 1 ) ) / 2;
+    int kl = kk + l;
+    if (j >= k) {
+        int jj = (j * ( j + 1 ) ) / 2;
+        jk = jj + k;
+        jl = jj + l;
+    } else {
+        jk = kk + j;
+        if (j>l) {
+            jl=j*(j+1)/2+l;
+        } else {
+            jl=l*(l+1)/2+j;
+        }
+    }
+    double da=val*2.0*Pmat[ij];
+    double db=val*2.0*Pmat[kl];
+    double sjl=val*Pmat[ik];
+    double sjk=val*Pmat[il];
+    double sik=val*Pmat[jl];
+    double sil=val*Pmat[jk];
+    if (k!=l) {
+        db=db+db;
+        Gmat[ik]-=sik;
+        if (i!=j && j>=k) Gmat[jk]-=sjk;
+    }
+    Gmat[il]-=sil;
+    Gmat[ij]+=db;
+    if (i!=j && j>=l) Gmat[jl]-=sjl;
+    if (ij!=kl) {
+        if (i!=j) da=da+da;
+        if (j<=k) {
+            Gmat[jk]-=sjk;
+            if (i==k && i!=j) Gmat[ik]-=sik;
+            if (k!=l && j<=l) Gmat[jl]-=sjl;
+        }
+        Gmat[kl]+=da;
+    }
+}
+
+inline void formGMatrixKernel2(
+    const double *PmatA, const double *PmatB,
+    double *GmatA, double *GmatB, TwoInts& sint) {
+    double val=sint.val;
+    int i=sint.i;
+    int j=sint.j;
+    int k=sint.k;
+    int l=sint.l;
+    int ii=i*(i+1)/2;
+    int ij=ii+j;
+    int ik=ii+k;
+    int il=ii+l;
+    int jk,jl;
+    int kk = ( k * ( k + 1 ) ) / 2;
+    int kl = kk + l;
+    if (j >= k) {
+        int jj = (j * ( j + 1 ) ) / 2;
+        jk = jj + k;
+        jl = jj + l;
+    } else {
+        jk = kk + j;
+        if (j>l) {
+            jl=j*(j+1)/2+l;
+        } else {
+            jl=l*(l+1)/2+j;
+        }
+    }
+    double da=val*(PmatA[ij]+PmatB[ij]);
+    double db=val*(PmatA[kl]+PmatB[kl]);
+    double sjlA=val*PmatA[ik];
+    double sjkA=val*PmatA[il];
+    double sikA=val*PmatA[jl];
+    double silA=val*PmatA[jk];
+    double sjlB=val*PmatB[ik];
+    double sjkB=val*PmatB[il];
+    double sikB=val*PmatB[jl];
+    double silB=val*PmatB[jk];
+    if (k!=l) {
+        db=db+db;
+        GmatA[ik]-=sikA;
+        GmatB[ik]-=sikB;
+        if (i!=j && j>=k) {
+            GmatA[jk]-=sjkA;
+            GmatB[jk]-=sjkB;
+        }
+    }
+    GmatA[il]-=silA;
+    GmatA[ij]+=db;
+    GmatB[il]-=silB;
+    GmatB[ij]+=db;
+    if (i!=j && j>=l) {
+        GmatA[jl]-=sjlA;
+        GmatB[jl]-=sjlB;
+    }
+    if (ij!=kl) {
+        if (i!=j) da=da+da;
+        if (j<=k) {
+            GmatA[jk]-=sjkA;
+            GmatB[jk]-=sjkB;
+            if (i!=j && i<=k) {
+                GmatA[ik]-=sikA;
+                GmatB[ik]-=sikB;
+            }
+            if (k!=l && j<=l) {
+                GmatA[jl]-=sjlA;
+                GmatB[jl]-=sjlB;
+            }
+        }
+        GmatA[kl]+=da;
+        GmatB[kl]+=da;
+    }
+}
+
+void
+TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
+    constexpr const int BINSIZE=8196;
+    TwoInts sints[BINSIZE];
+
+    cache.open_for_reading();
+    size_t nints = cache.total_size()/sizeof(TwoInts);
+    size_t nbin = nints/BINSIZE;
+    size_t nextra = nints%BINSIZE;
+    for (int ibin=0; ibin<nbin; ++ibin) {
+        cache.read(sints,BINSIZE);
+        for (int ix=0; ix<BINSIZE; ++ix) {
+            formGMatrixKernel(Pmat,Gmat,sints[ix]);
+        }
+    }
+    if (nextra) {
+        cache.read(sints,nextra);
+        for (int ix=0; ix<nextra; ++ix) {
+            formGMatrixKernel(Pmat,Gmat,sints[ix]);
+        }
+    }
+    cache.close();
+}
+
+void
+TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
+                             double *GmatA,double *GmatB) {
+    constexpr const int BINSIZE=8196;
+    TwoInts sints[BINSIZE];
+
+    cache.open_for_reading();
+    size_t nints = cache.total_size()/sizeof(TwoInts);
+    size_t nbin = nints/BINSIZE;
+    size_t nextra = nints%BINSIZE;
+    for (size_t ibin=0; ibin<nbin; ++ibin) {
+        cache.read(sints,BINSIZE);
+        for (int ix=0; ix<BINSIZE; ++ix) {
+            formGMatrixKernel2(PmatA,PmatB,GmatA,GmatB,sints[ix]);
+        }
+    }
+    if (nextra!=0) {
+        cache.read(sints,nextra);
+        for (int ix=0; ix<nextra; ++ix) {
+            formGMatrixKernel2(PmatA,PmatB,GmatA,GmatB,sints[ix]);
+        }
+    }
+    cache.close();
+}
+
+void TwoElectronInts::directFormGMatrix(const double *Pmat, double *Gmat, const Basis& basis) {
+    const double dist_cut = 20.0;
+    const double threshold=1.e-12;
+    int pknt=0;
+    const Shell* shell(basis.shell_ptr());
+    const Center* center(basis.center_ptr());
+    const AuxFunctions& aux(*basis.auxfun_ptr());
+    const int nshell=basis.number_of_shells();
+    const int maxl=basis.maxLvalue();
+    const int maxlst=aux.maxLstates();
+    int ml2=maxlst*maxlst;
+    int ml4=ml2*ml2;
+    int ir0=(0);
+    int nls1=(0);
+    for (int i=0; i<start; ++i,ir0+=nls1) {
+        int lv1=(shell+i)->Lvalue();
+        nls1=aux.number_of_lstates(lv1);
+    }
+    MDInts mds(maxl);
+#ifndef UNOMOL_MD_INTS
+    Rys rys(maxl);
+#endif
+    ShellQuartet sq(maxl);
+    TwoInts* sints=new TwoInts[ml4];
+    int it;
+    const double *dp;
+    putils::Stopwatch timer;
+    timer.start();
+    int ncalc = 0;
+    for (int ish=start; ish<nshell; ++ish) {
+        int ir0 = basis.offset(ish);
+        sq.npr1=(shell+ish)->number_of_prims();
+        sq.lv1=(shell+ish)->Lvalue();
+        int cen1=(shell+ish)->center();
+        sq.al1=(shell+ish)->alf_ptr();
+        sq.co1=(shell+ish)->cof_ptr();
+        sq.a=(center+cen1)->r_vec();
+        int nls1=aux.number_of_lstates(sq.lv1);
+        int lv1 = sq.lv1;
+        for (int jsh=0; jsh<=ish; ++jsh) {
+            int jr0 = basis.offset(jsh);
+            sq.npr2=(shell+jsh)->number_of_prims();
+            sq.lv2=(shell+jsh)->Lvalue();
+            int cen2=(shell+jsh)->center();
+            sq.al2=(shell+jsh)->alf_ptr();
+            sq.co2=(shell+jsh)->cof_ptr();
+            sq.b=(center+cen2)->r_vec();
+            sq.ab2=dist_sqr(sq.a,sq.b);
+            int nls2=aux.number_of_lstates(sq.lv2);
+            if (sq.ab2 > dist_cut) continue;
             int lv2 = sq.lv2;
             bool switch12=sq.lv1<sq.lv2;
             if (switch12) {
@@ -608,6 +958,8 @@ TwoElectronInts::calculate(const Basis& basis) {
                     sq.cd2=dist_sqr(sq.c,sq.d);
                     int nls4=aux.number_of_lstates(sq.lv4);
                     int lv4 = sq.lv4;
+                    if ( sq.cd2 > dist_cut) continue;
+                    int lvt = lv1 + lv2 + lv3 + lv4;
                     bool switch34=sq.lv3<sq.lv4;
                     if (switch34) {
                         it=sq.npr3;
@@ -627,15 +979,15 @@ TwoElectronInts::calculate(const Basis& basis) {
                         sq.d=dp;
                     }
                     int knt=0;
-                    for (int ils=0; ils<nls1;++ils) {
+                    for (int ils=0; ils<nls1; ++ils) {
                         int ir = ir0 + ils;
-                        for (int jls=0; jls<nls2;++jls) {
+                        for (int jls=0; jls<nls2; ++jls) {
                             int jr = jr0 + jls;
                             if ( jr > ir ) break;
-                            for (int kls=0; kls<nls3;++kls) {
+                            for (int kls=0; kls<nls3; ++kls) {
                                 int kr = kr0 + kls;
                                 if ( kr > ir) break;
-                                for (int lls=0; lls<nls4;++lls) {
+                                for (int lls=0; lls<nls4; ++lls) {
                                     int lr = lr0 + lls;
                                     if ( lr > kr || ( ir == kr && lr > jr) ) break;
                                     (sints+knt)->val=0.0;
@@ -649,10 +1001,10 @@ TwoElectronInts::calculate(const Basis& basis) {
                                     if (switch34) l34=(lls<<UNO_SHIFT)+kls;
                                     sq.lstates[knt]=(l12<<UNO_SHIFT2)+l34;
                                     sq.norms[knt] =
-                                         aux.normalization_factor(lv1,ils)*
-                                         aux.normalization_factor(lv2,jls)*
-                                         aux.normalization_factor(lv3,kls)*
-                                         aux.normalization_factor(lv4,lls);                     
+                                        aux.normalization_factor(lv1,ils)*
+                                        aux.normalization_factor(lv2,jls)*
+                                        aux.normalization_factor(lv3,kls)*
+                                        aux.normalization_factor(lv4,lls);
                                     ++knt;
                                 }
                             }
@@ -661,14 +1013,19 @@ TwoElectronInts::calculate(const Basis& basis) {
                     if (!knt) continue;
                     ncalc += knt;
                     sq.len=knt;
-#ifdef UNOMOL_MD_INTS                    
-                    calc_two_electron_ints(sq,aux,mds,sints);
+
+#ifdef UNOMOL_MD_INTS
+                    calc_two_electron_ints_md(sq,aux,mds,sints);
 #else
-                    calc_two_electron_ints(sq,aux,rys,sints);
+                    if ( lvt <= 8) {
+                        calc_two_electron_ints_rys(sq,aux,rys,sints);
+                    } else {
+                        calc_two_electron_ints_md(sq,aux,mds,sints);
+                    }
 #endif
                     for (int kc=0; kc<knt; ++kc) {
                         if (fabs((sints+kc)->val)>threshold) {
-                            cache.write(sints+kc,1);
+                            formGMatrixKernel(Pmat,Gmat,sints[kc]);
                         }
                     }
                     if (switch34) {
@@ -690,7 +1047,6 @@ TwoElectronInts::calculate(const Basis& basis) {
         }
     }
     timer.stop();
-    cache.close();
     std::cerr << "Time for Two Electrons Integrals = " << timer.elapsed_time() << " seconds\n";
     size_t nb = cache.total_size()/sizeof(TwoInts);
     std::cerr << " # of write integrals = " << nb << "\n";
@@ -698,273 +1054,5 @@ TwoElectronInts::calculate(const Basis& basis) {
     delete [] sints;
 }
 
-void
-TwoElectronInts::formGmatrix(const double* Pmat,double *Gmat) {
-    constexpr const int BINSIZE=8196;
-    TwoInts sints[BINSIZE];
-
-    cache.open_for_reading();
-    size_t nints = cache.total_size()/sizeof(TwoInts);
-    size_t nbin = nints/BINSIZE;
-    size_t nextra = nints%BINSIZE;
-    for (int ibin=0; ibin<nbin; ++ibin) {
-        cache.read(sints,BINSIZE);
-        for (int ix=0; ix<BINSIZE; ++ix) {
-            double val=(sints+ix)->val;
-            int i=(sints+ix)->i;
-            int j=(sints+ix)->j;
-            int k=(sints+ix)->k;
-            int l=(sints+ix)->l;
-            int ii=i*(i+1)/2;
-            int ij=ii+j;
-            int ik=ii+k;
-            int il=ii+l;
-            int jk,jl;
-            int kk = ( k * ( k + 1 ) ) / 2;
-            int kl = kk + l;
-            if (j >= k) {
-                int jj = (j * ( j + 1 ) ) / 2;
-                jk = jj + k;
-                jl = jj + l;
-            } else {
-                jk = kk + j;
-                if (j>l) {
-                    jl=j*(j+1)/2+l;
-                } else {
-                    jl=l*(l+1)/2+j;
-                }
-            }
-            double da=val*2.0*Pmat[ij];
-            double db=val*2.0*Pmat[kl];
-            double sjl=val*Pmat[ik];
-            double sjk=val*Pmat[il];
-            double sik=val*Pmat[jl];
-            double sil=val*Pmat[jk];
-            if (k!=l) {
-                db=db+db;
-                Gmat[ik]-=sik;
-                if (i!=j && j>=k) Gmat[jk]-=sjk;
-            }
-            Gmat[il]-=sil;
-            Gmat[ij]+=db;
-            if (i!=j && j>=l) Gmat[jl]-=sjl;
-            if (ij!=kl) {
-                if (i!=j) da=da+da;
-                if (j<=k) {
-                    Gmat[jk]-=sjk;
-                    if (i==k && i!=j) Gmat[ik]-=sik;
-                    if (k!=l && j<=l) Gmat[jl]-=sjl;
-                }
-                Gmat[kl]+=da;
-            }
-        }
-    }
-    if (nextra) {
-        cache.read(sints,nextra);
-        for (int ix=0; ix<nextra; ++ix) {
-            double val=(sints+ix)->val;
-            int i=(sints+ix)->i;
-            int j=(sints+ix)->j;
-            int k=(sints+ix)->k;
-            int l=(sints+ix)->l;
-            int ii=i*(i+1)/2;
-            int ij=ii+j;
-            int ik=ii+k;
-            int il=ii+l;
-            int jk,jl;
-            int kk = ( k * ( k + 1 ) ) / 2;
-            int kl = kk + l;
-            if (j >= k) {
-                int jj = (j * ( j + 1 ) ) / 2;
-                jk = jj + k;
-                jl = jj + l;
-            } else {
-                jk = kk + j;
-                if (j>l) {
-                    jl=j*(j+1)/2+l;
-                } else {
-                    jl=l*(l+1)/2+j;
-                }
-            }
-            double da=val*2.0*Pmat[ij];
-            double db=val*2.0*Pmat[kl];
-            double sjl=val*Pmat[ik];
-            double sjk=val*Pmat[il];
-            double sik=val*Pmat[jl];
-            double sil=val*Pmat[jk];
-            if (k!=l) {
-                db=db+db;
-                Gmat[ik]-=sik;
-                if (i!=j && j>=k) Gmat[jk]-=sjk;
-            }
-            Gmat[il]-=sil;
-            Gmat[ij]+=db;
-            if (i!=j && j>=l) Gmat[jl]-=sjl;
-            if (ij!=kl) {
-                if (i!=j) da=da+da;
-                if (j<=k) {
-                    Gmat[jk]-=sjk;
-                    if (i==k && i!=j ) Gmat[ik]-=sik;
-                    if (k!=l && j<=l ) Gmat[jl]-=sjl;
-                }
-                Gmat[kl]+=da;
-            }
-        } 
-    }
-    cache.close();
-}
-
-void
-TwoElectronInts::formGmatrix(const double* PmatA,const double *PmatB,
-                             double *GmatA,double *GmatB) {
-    constexpr const int BINSIZE=8196;
-    TwoInts sints[BINSIZE];
-
-    cache.open_for_reading();
-    size_t nints = cache.total_size()/sizeof(TwoInts);
-    size_t nbin = nints/BINSIZE;
-    size_t nextra = nints%BINSIZE;
-    for (size_t ibin=0; ibin<nbin; ++ibin) {
-        cache.read(sints,BINSIZE);
-        for (int ix=0; ix<BINSIZE; ++ix) {
-            double val=(sints+ix)->val;
-            int i=(sints+ix)->i;
-            int j=(sints+ix)->j;
-            int k=(sints+ix)->k;
-            int l=(sints+ix)->l;
-            int ii=i*(i+1)/2;
-            int ij=ii+j;
-            int ik=ii+k;
-            int il=ii+l;
-            int jk,jl;
-            int kl=k*(k+1)/2+l;
-            if (j>k) {
-                jk=j*(j+1)/2+k;
-            } else {
-                jk=k*(k+1)/2+j;
-            }
-            if (j>l) {
-                jl=j*(j+1)/2+l;
-            } else {
-                jl=l*(l+1)/2+j;
-            }
-            double da=val*(PmatA[ij]+PmatB[ij]);
-            double db=val*(PmatA[kl]+PmatB[kl]);
-            double sjlA=val*PmatA[ik];
-            double sjkA=val*PmatA[il];
-            double sikA=val*PmatA[jl];
-            double silA=val*PmatA[jk];
-            double sjlB=val*PmatB[ik];
-            double sjkB=val*PmatB[il];
-            double sikB=val*PmatB[jl];
-            double silB=val*PmatB[jk];
-            if (k!=l) {
-                db=db+db;
-                GmatA[ik]-=sikA;
-                GmatB[ik]-=sikB;
-                if (i!=j && j>=k) {
-                    GmatA[jk]-=sjkA;
-                    GmatB[jk]-=sjkB;
-                }
-            }
-            GmatA[il]-=silA;
-            GmatA[ij]+=db;
-            GmatB[il]-=silB;
-            GmatB[ij]+=db;
-            if (i!=j && j>=l) {
-                GmatA[jl]-=sjlA;
-                GmatB[jl]-=sjlB;
-            }
-            if (ij!=kl) {
-                if (i!=j) da=da+da;
-                if (j<=k) {
-                    GmatA[jk]-=sjkA;
-                    GmatB[jk]-=sjkB;
-                    if (i!=j && i<=k) {
-                        GmatA[ik]-=sikA;
-                        GmatB[ik]-=sikB;
-                    }
-                    if (k!=l && j<=l) {
-                        GmatA[jl]-=sjlA;
-                        GmatB[jl]-=sjlB;
-                    }
-                }
-                GmatA[kl]+=da;
-                GmatB[kl]+=da;
-            }
-        }
-    }
-    if (nextra!=0) {
-        cache.read(sints,nextra);
-        for (int ix=0; ix<nextra; ++ix) {
-            double val=(sints+ix)->val;
-            int i=(sints+ix)->i;
-            int j=(sints+ix)->j;
-            int k=(sints+ix)->k;
-            int l=(sints+ix)->l;
-            int ii=i*(i+1)/2;
-            int ij=ii+j;
-            int ik=ii+k;
-            int il=ii+l;
-            int jk,jl;
-            int kl=k*(k+1)/2+l;
-            if (j>k) {
-                jk=j*(j+1)/2+k;
-            } else {
-                jk=k*(k+1)/2+j;
-            }
-            if (j>l) {
-                jl=j*(j+1)/2+l;
-            } else {
-                jl=l*(l+1)/2+j;
-            }
-            double da=val*(PmatA[ij]+PmatB[ij]);
-            double db=val*(PmatA[kl]+PmatB[kl]);
-            double sjlA=val*PmatA[ik];
-            double sjkA=val*PmatA[il];
-            double sikA=val*PmatA[jl];
-            double silA=val*PmatA[jk];
-            double sjlB=val*PmatB[ik];
-            double sjkB=val*PmatB[il];
-            double sikB=val*PmatB[jl];
-            double silB=val*PmatB[jk];
-            if (k!=l) {
-                db=db+db;
-                GmatA[ik]-=sikA;
-                GmatB[ik]-=sikB;
-                if (i!=j && j>=k) {
-                    GmatA[jk]-=sjkA;
-                    GmatB[jk]-=sjkB;
-                }
-            }
-            GmatA[il]-=silA;
-            GmatA[ij]+=db;
-            GmatB[il]-=silB;
-            GmatB[ij]+=db;
-            if (i!=j && j>=l) {
-                GmatA[jl]-=sjlA;
-                GmatB[jl]-=sjlB;
-            }
-            if (ij!=kl) {
-                if (i!=j) da=da+da;
-                if (j<=k) {
-                    GmatA[jk]-=sjkA;
-                    GmatB[jk]-=sjkB;
-                    if (i!=j && i<=k) {
-                        GmatA[ik]-=sikA;
-                        GmatB[ik]-=sikB;
-                    }
-                    if (k!=l && j<=l) {
-                        GmatA[jl]-=sjlA;
-                        GmatB[jl]-=sjlB;
-                    }
-                }
-                GmatA[kl]+=da;
-                GmatB[kl]+=da;
-            }
-        }
-    }
-    cache.close();
-}
 
 }
