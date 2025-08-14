@@ -2185,7 +2185,7 @@ public:
     constexpr void Fgamma(double fm[],double t,int m) const noexcept {
         const double tcrit=20.0;
         const double sqrtpi=0.88622692545275801365;
-        const double eps=1.e-14;
+        const double eps=1.e-12;
         if (t>tcrit) {
             fm[0]=sqrtpi/sqrt(t);
             for (int i=1; i<=m; i++) fm[i]=fm[i-1]*(i-0.5)/t;

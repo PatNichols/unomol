@@ -1,7 +1,7 @@
 #include "Rys.hpp"
 
 #define MAXROOTSSQR 81
-#define THRESHOLD 1.e-14
+#define THRESHOLD 1.e-12
 namespace unomol {
 
 void
@@ -311,8 +311,7 @@ Rys::rootN (int nr, double X) noexcept {
     }
 }
 
-void
-Rys::root1 (double x) noexcept {
+void Rys::root1 (double x) noexcept {
     double f1, y, xinv, g;
     const double pie4 = .785398163397448;
 

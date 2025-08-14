@@ -52,7 +52,7 @@ double SymmPackDiffNorm(
  *  return the value sqrt(x*x+y*y) withput underflow
  *   or overflow error.
  */
-constexpr double pythag(double x,double y) noexcept {
+inline double pythag(double x,double y) noexcept {
     double ax=fabs(x);
     double ay=fabs(y);
     if (ax>ay) {

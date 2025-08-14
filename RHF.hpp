@@ -375,8 +375,8 @@ class RestrictedHartreeFock {
             vstat=init_energy-energyGs;
             r2=px*px+py*py+pz*pz;
             alfa= -2.0*vpol*(r2*r2);
-            fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le\n",px,py,pz,
-                    vpol,alfa);
+            fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le %25.15le %25.15le\n",px,py,pz,
+                vpol,alfa,vstat,(vstat+vpol));
             fflush(vout);
             fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
                     i,energyGs,init_energy,final_energy,vstat,ediff);
