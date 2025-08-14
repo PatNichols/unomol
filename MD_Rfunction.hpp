@@ -2185,7 +2185,7 @@ public:
     constexpr void Fgamma(double fm[],double t,int m) const noexcept {
         const double tcrit=20.0;
         const double sqrtpi=0.88622692545275801365;
-        const double eps=1.e-14;
+        const double eps=1.e-12;
         if (t>tcrit) {
             fm[0]=sqrtpi/sqrt(t);
             for (int i=1; i<=m; i++) fm[i]=fm[i-1]*(i-0.5)/t;
@@ -2216,13 +2216,11 @@ public:
         for (int m=0; m<=m_max; ++m) {
             rz[0][0][1][m] = z * rz[0][0][0][m+1];
         }
-        r[0][0][1] = rz[0][0][1][0];
         // lz = 2
         m_max = ltot-1;
         for (int m=0; m<=m_max; ++m) {
             rz[0][0][2][m] = z * rz[0][0][1][m+1] + rz[0][0][0][m+1];
         }
-        r[0][0][2] = rz[0][0][2][0];
         // lz > 2
         for (int lz=3; lz<=ltot; ++lz) {
             int lzm1 = lz - 1;
@@ -2232,7 +2230,6 @@ public:
                 rz[0][0][lz][m] = z * rz[0][0][lzm1][m+1] +
                                   lzm1 * rz[0][0][lzm2][m+1];
             }
-            r[0][0][lz] = rz[0][0][lz][0];
         }
         // ly = 1
         int lzend = ltot - 1;
@@ -2241,7 +2238,6 @@ public:
             for (int m=0; m<=m_max; ++m) {
                 rz[0][1][lz][m] = y * rz[0][0][lz][m+1];
             }
-            r[0][1][lz] = rz[0][1][lz][0];
         }
         // ly = 2
         lzend = ltot - 2;
@@ -2250,7 +2246,6 @@ public:
             for (int m=0; m<=m_max; ++m) {
                 rz[0][2][lz][m] = y * rz[0][1][lz][m+1] + rz[0][0][lz][m+1];
             }
-            r[0][2][lz] = rz[0][2][lz][0];
         }
         // ly > 2
         for (int ly=3; ly<=ltot; ++ly) {
@@ -2260,11 +2255,10 @@ public:
                 int lym2 = ly - 2;
                 m_max = lzend - lz;
                 for (int m=0; m<=m_max; ++m) {
-                    rz[0][ly][lz][m+1] =
+                    rz[0][ly][lz][m] =
                         y * rz[0][lym1][lz][m+1] +
                         lym1 * rz[0][lym2][lz][m+1];
                 }
-                r[0][ly][lz] = rz[0][ly][lz][0];
             }
         }
         // lx = 1;
@@ -2274,10 +2268,9 @@ public:
             for (int lz=0; lz<=lzend; ++lz) {
                 m_max = lzend - lz;
                 for (int m=0; m<=m_max; ++m) {
-                    rz[1][ly][lz][m+1] =
+                    rz[1][ly][lz][m] =
                         x * rz[0][ly][lz][m+1];
                 }
-                r[1][ly][lz] = rz[1][ly][lz][0];
             }
         }
         // lx = 2;
@@ -2287,11 +2280,10 @@ public:
             for (int lz=0; lz<=lzend; ++lz) {
                 m_max = lzend - lz;
                 for (int m=0; m<=m_max; ++m) {
-                    rz[2][ly][lz][m+1] =
+                    rz[2][ly][lz][m] =
                         x * rz[1][ly][lz][m+1] +
                         rz[0][ly][lz][m+1];
                 }
-                r[2][ly][lz] = rz[2][ly][lz][0];
             }
         }
         // lx > 2
@@ -2309,6 +2301,17 @@ public:
                             lxm1 * rz[lxm2][ly][lz][m+1];
 
                     }
+                }
+            }
+        }
+        for (int lx=0;lx<=ltot;++lx)
+        {
+            lyend = ltot - lx;
+            for (int ly=0;ly<=lyend;++ly)
+            {
+                lzend = lyend - ly;
+                for (int lz=0;lz<=lzend;++lz)
+                {
                     r[lx][ly][lz] = rz[lx][ly][lz][0];
                 }
             }

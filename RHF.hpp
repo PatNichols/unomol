@@ -301,6 +301,7 @@ class RestrictedHartreeFock {
         int npts;
         basis.dpm_augment();
         eps=1.e-12;
+        putils::Stopwatch timer;
         ////////////////////////////////////////////////////////
         // start calculation
         std::ifstream in("pos.grid.dat");
@@ -317,6 +318,7 @@ class RestrictedHartreeFock {
         OintsOutput();
         formXmatrix();
         memcpy(Pmat,PmatGs,sizeof(double)*no2);
+        timer.start();
         iteration=0;
         extrap=0;
         eold=0.0;
@@ -327,7 +329,8 @@ class RestrictedHartreeFock {
             update(&xints);
             if (is_converged()) break;
         }
-
+        timer.stop();
+        std::cerr << "SCF time = " << timer.elapsed_time() << " s\n";
         double final_energy=energy+nucrep;
         double vpol=final_energy-init_energy;
         double vstat=init_energy-energyGs+nucrep;
@@ -335,8 +338,8 @@ class RestrictedHartreeFock {
         double alfa= -2.0*vpol*r2*r2;
         FILE *vout = create_file("vpol.out");
         FILE *sout = create_file("spol.out");
-        fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le\n",px,py,pz,
-                vpol,alfa);
+        fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le %25.15le %25.15le\n",px,py,pz,
+                vpol,alfa,vstat,(vstat+vpol));
         fflush(vout);
         fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
                 0,energyGs,init_energy,final_energy,vstat,ediff);
@@ -353,6 +356,8 @@ class RestrictedHartreeFock {
             GDPMInts(basis,Hmat);
             formXmatrix();
             memcpy(Pmat,PmatGs,sizeof(double)*no2);
+            timer.clear();
+            timer.start();
             iteration=0;
             extrap=0;
             eold=0.0;
@@ -363,13 +368,15 @@ class RestrictedHartreeFock {
                 update(&xints);
                 if (is_converged()) break;
             }
+            timer.stop();
+            std::cerr << "SCF time = " << timer.elapsed_time() << " s\n";
             final_energy=energy+nucrep;
             vpol=final_energy-init_energy;
             vstat=init_energy-energyGs;
             r2=px*px+py*py+pz*pz;
             alfa= -2.0*vpol*(r2*r2);
-            fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le\n",px,py,pz,
-                    vpol,alfa);
+            fprintf(vout,"%15.10lf %15.10lf %15.10lf %25.15le %25.15le %25.15le %25.15le\n",px,py,pz,
+                vpol,alfa,vstat,(vstat+vpol));
             fflush(vout);
             fprintf(sout,"%3d %20.10le %20.10le %20.10le %20.10le %25.15le\n",
                     i,energyGs,init_energy,final_energy,vstat,ediff);

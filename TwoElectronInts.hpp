@@ -100,6 +100,9 @@ class TwoElectronInts {
 
     void formGmatrix(const double* PmatA,const double* PmatB,
                      double* GmatA,double* GmatB);
+
+    void directFormGMatrix(const double *Pmat, double *Gmat,
+        const Basis& base);
   private:
     putils::Cache cache;
     int start;

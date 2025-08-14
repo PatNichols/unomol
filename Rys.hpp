@@ -9,6 +9,8 @@
 namespace unomol {
 
 #define MAXROOTS 12
+#define MAXRYS 20
+#define RYS_ACC 1.e-12
 
 class Rys {
     double **allocate_d2(int n1,int n2) {
@@ -140,7 +142,7 @@ class Rys {
         }
     }
 
-    void calculate_roots(double t,int nroots) noexcept {
+    inline void calculate_roots(double t,int nroots) noexcept {
         switch (nroots) {
         case 0:
             std::cerr << "Rys cannot have zero roots\n";
@@ -168,7 +170,7 @@ class Rys {
     void root5(double t) noexcept;
     void rootN(int nroots,double t) noexcept;
 
-    constexpr double ShiftKernel(
+    inline double ShiftKernel(
         const double * const * G,
         const double& abx,const double& cdx,
         const int l12,const int l2,const int l34,const int l4
@@ -189,7 +191,7 @@ class Rys {
         return sum;
     }
 
-    constexpr void RecurKernel(double **G,int l12,int l34) noexcept {
+    inline void RecurKernel(double **G,int l12,int l34) noexcept {
         G[0][0] = 1.0;
         G[0][1] = Cp;
         G[1][0] = C;
