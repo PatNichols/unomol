@@ -84,7 +84,7 @@ void copy_identity (const int nr, const int nc, double *__restrict__ z, const in
 
 void copy_trans (const int n, double* __restrict__ z);
 
-constexpr double dist_sqr(const double *a,const double *b) noexcept {
+inline double dist_sqr(const double *a,const double *b) noexcept {
     double tx=a[0]-b[0];
     double ty=a[1]-b[1];
     double tz=a[2]-b[2];
