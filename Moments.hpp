@@ -14,11 +14,6 @@ using namespace std;
 
 namespace unomol {
 
-void calc_moments (MomInts * mvals,
-                   ShellPairData & sp,
-                   const AuxFunctions & aux,
-                   MD_Dfunction & dx, MD_Dfunction & dy, MD_Dfunction & dz);
-
 void MomentInts (const Basis & basis );
 
 void AnalyzeMoments (const double *Pmat, const Center * center, int ncen, int no2);

@@ -11,12 +11,7 @@ using namespace std;
 
 namespace unomol {
 
-void calc_gdpm_ints(
-    const ShellPairData& sq,
-    double *svals,
-    const AuxFunctions& aux,Rys& rys,const double *p);
-
-void GDPMInts(const Basis& bas,double* Hmat);
+void GDPMInts(const Basis& bas, double* Hmat);
 
 }
 #endif
