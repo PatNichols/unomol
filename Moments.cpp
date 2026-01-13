@@ -3,7 +3,7 @@
 namespace unomol {
 
 void calc_moments (MomInts * mvals,
-                   ShellPairData & sp,
+                   ShellPair & sp,
                    const AuxFunctions & aux,
                    MD_Dfunction & dx, MD_Dfunction & dy, MD_Dfunction & dz) {
     int ipr, jpr, kc;
@@ -31,7 +31,7 @@ void calc_moments (MomInts * mvals,
             dy.eval (abi, p[1] - a[1], p[1] - b[1], sp.lv1 + 1, sp.lv2 + 1);
             dz.eval (abi, p[2] - a[2], p[2] - b[2], sp.lv1 + 1, sp.lv2 + 1);
             for (kc = 0; kc < sp.len; ++kc) {
-                unsigned short key=sp.lstates[kc];
+                unsigned int key=sp.lstates[kc];
                 ls2= key&0xF;
                 ls1= key>>4;
                 l1 = aux.Lxyz (sp.lv1, ls1, 0);
@@ -102,8 +102,8 @@ void MomentInts (const Basis & basis ) {
     const AuxFunctions& aux(*(basis.auxfun_ptr()));
     int maxlst = aux.number_of_lstates (lmax);
     int maxlst2 = maxlst * maxlst;
-    ShellPairData sp;
-    sp.lstates = new unsigned short[maxlst2];
+    ShellPair sp(lmax);
+//    sp.lstates = new unsigned short[maxlst2];
     MomInts *mvals = new MomInts[maxlst2];
     double *factors = new double[maxlst2];
     MD_Dfunction dx (lmax + 2);
@@ -116,23 +116,12 @@ void MomentInts (const Basis & basis ) {
     }
     for (ish = 0; ish < nshell; ++ish) {
         int ir0 = basis.offset(ish);
-        sp.npr1 = (shell + ish)->number_of_prims ();
-        sp.lv1 = (shell + ish)->Lvalue ();
-        icen = (shell + ish)->center ();
-        sp.al1 = (shell + ish)->alf_ptr ();
-        sp.co1 = (shell + ish)->cof_ptr ();
-        sp.a = (center + icen)->r_vec ();
+        sp.assign1(shell[ish],center);
         int nls1 = aux.number_of_lstates (sp.lv1);
         for (jsh = 0; jsh <= ish; ++jsh) {
             int jr0 = basis.offset(jsh);
-            sp.npr2 = (shell + jsh)->number_of_prims ();
-            sp.lv2 = (shell + jsh)->Lvalue ();
-            jcen = (shell + jsh)->center ();
-            sp.al2 = (shell + jsh)->alf_ptr ();
-            sp.co2 = (shell + jsh)->cof_ptr ();
+            sp.assign2(shell[jsh],center);
             int nls2 = aux.number_of_lstates (sp.lv2);
-            sp.b = (center + jcen)->r_vec ();
-            sp.ab2=dist_sqr(sp.a,sp.b);
             int knt = 0;
             for (int ils = 0; ils < nls1; ++ils) {
                 int ir = ir0 + ils;
@@ -150,7 +139,7 @@ void MomentInts (const Basis & basis ) {
                     (mvals + knt)->qyz = 0.0;
                     (mvals + knt)->qzz = 0.0;
                     (mvals + knt)->ijr = iir + jr;
-                    (sp.lstates)[knt] = (unsigned short)((ils<<4)+jls);
+                    (sp.lstates)[knt] = (unsigned int)((ils<<4)+jls);
                     factors[knt] = 4.0;
                     if (ir == jr) {
                         factors[knt] = 2.0;
@@ -182,7 +171,6 @@ void MomentInts (const Basis & basis ) {
     fclose(out);
     delete [] factors;
     delete [] mvals;
-    delete [] sp.lstates;
 }
 
 

@@ -4,7 +4,7 @@
 namespace unomol {
 
 void calc_gdpm_ints(
-    const ShellPairData& sq,
+    const ShellPair& sq,
     double *svals,
     const AuxFunctions& aux,Rys& rys,const double *p) {
     double q[3];
@@ -80,8 +80,8 @@ void calc_gdpm_ints(
     }
 }
 
-
-void GDPMInts(const Basis& bas,double* Hmat) {
+void GDPMInts(const Basis& bas,double* Hmat) 
+{
     int maxl=bas.maxLvalue();
     Rys rys(maxl);
     int nshell=bas.number_of_shells();
@@ -93,52 +93,24 @@ void GDPMInts(const Basis& bas,double* Hmat) {
     const double *q=(center+bas.skip_center())->r_vec();
     int maxr=2*maxl+1;
     double *svals=new double[ml2];
-    ShellPairData sp;
-    sp.lstates=new unsigned short[ml2];
-    int * ostates=new int[ml2];
-    for (int ishell=0; ishell<nshell; ++ishell) {
-        sp.npr1=(shell+ishell)->number_of_prims();
-        sp.lv1=(shell+ishell)->Lvalue();
-        int cn1=(shell+ishell)->center();
-        sp.al1=(shell+ishell)->alf_ptr();
-        sp.co1=(shell+ishell)->cof_ptr();
-        sp.a=(center+cn1)->r_vec();
-        int ir0 = bas.offset(ishell);
-        int nls1=aux.number_of_lstates(sp.lv1);
-        for (int jshell=0; jshell<=ishell; ++jshell) {
-            sp.npr2=(shell+jshell)->number_of_prims();
-            sp.lv2=(shell+jshell)->Lvalue();
-            int cn2=(shell+jshell)->center();
-            sp.al2=(shell+jshell)->alf_ptr();
-            sp.co2=(shell+jshell)->cof_ptr();
-            sp.b=(center+cn2)->r_vec();
-            sp.ab2=dist_sqr(sp.a,sp.b);
-            int jr0 = bas.offset(jshell);
-            int nls2=aux.number_of_lstates(sp.lv2);
-            int knt=0;
-            for (int ils=0; ils<nls1; ++ils) {
-                int ir = ir0 + ils;
-                int iir = ir * (ir + 1 ) / 2;
-                for (int jls=0; jls<nls2; ++jls) {
-                    int jr = jr0 + jls;
-                    if ( jr > ir ) break;
-                    sp.lstates[knt]=((ils<<4)+jls);
-                    ostates[knt]= iir + jr;
-                    svals[knt]=0.0;
-                    ++knt;
-                }
-            }
-            if (!knt) continue;
-            sp.len=knt;
+    ShellPair sp(maxl);
+    for (int ish = 0; ish < nshell; ++ish) {
+        int ir0 = bas.offset(ish);
+        sp.assign1(shell[ish],center);
+        for (int jsh = 0; jsh <= ish; ++jsh) {
+            int jr0 = bas.offset(jsh);
+            sp.assign2(shell[ish],center);
+            int knt = sp.precalc(aux,ir0,jr0);
+            if (!knt)
+                continue;
+            memset(svals,0x0,sizeof(double)*knt);
             calc_gdpm_ints(sp,svals,aux,rys,q);
             for (int kc=0; kc<knt; kc++) {
-                int ijr=ostates[kc];
+                int ijr=sp.orbs[kc];
                 Hmat[ijr]-=svals[kc];
             }
         }
     }
-    delete [] ostates;
-    delete [] sp.lstates;
     delete [] svals;
 };
 
